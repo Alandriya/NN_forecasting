@@ -46,9 +46,9 @@ def train_and_test(model, optimizer, criterion, train_epoch, valid_epoch, loader
             train_batch = normalize_data_cuda(train_batch, cfg.min_vals, cfg.max_vals)
             optimizer.zero_grad()
             train_pred, decouple_loss = model([train_batch, eta, epoch], mode='train')
-            for channel in range(3):
-                train_pred[:, :, channel] = (train_pred[:, :, channel] * (cfg.max_vals[channel] - cfg.min_vals[channel]) +
-                                             cfg.min_vals[channel])
+            # for channel in range(3):
+            #     train_pred[:, :, channel] = (train_pred[:, :, channel] * (cfg.max_vals[channel] - cfg.min_vals[channel]) +
+            #                                  cfg.min_vals[channel])
             loss = criterion(train_batch[IN_LEN:, :, :3], train_pred, decouple_loss)
             loss.backward()
             optimizer.step()
@@ -94,9 +94,9 @@ def train_and_test(model, optimizer, criterion, train_epoch, valid_epoch, loader
                 for valid_batch in valid_loader:
                     valid_batch = normalize_data_cuda(valid_batch, cfg.min_vals, cfg.max_vals)
                     valid_pred, decouple_loss = model([valid_batch, 0, train_epoch], mode='test')
-                    for channel in range(3):
-                        valid_pred[:, :, channel] = (valid_pred[:, :, channel] * (cfg.max_vals[channel] - cfg.min_vals[channel]) +
-                                    cfg.min_vals[channel])
+                    # for channel in range(3):
+                    #     valid_pred[:, :, channel] = (valid_pred[:, :, channel] * (cfg.max_vals[channel] - cfg.min_vals[channel]) +
+                    #                 cfg.min_vals[channel])
                     loss = criterion(valid_batch[IN_LEN:, :, :3], valid_pred, decouple_loss)
                     loss = reduce_tensor(loss)  # all reduce
                     valid_loss += loss.item()
@@ -121,9 +121,9 @@ def train_and_test(model, optimizer, criterion, train_epoch, valid_epoch, loader
         for test_batch in test_loader:
             test_batch = normalize_data_cuda(test_batch, cfg.min_vals, cfg.max_vals)
             test_pred, decouple_loss = model([test_batch, 0, train_epoch], mode='test')
-            for channel in range(3):
-                test_pred[:, :, channel] = (test_pred[:, :, channel] * (cfg.max_vals[channel] - cfg.min_vals[channel]) +
-                                             cfg.min_vals[channel])
+            # for channel in range(3):
+            #     test_pred[:, :, channel] = (test_pred[:, :, channel] * (cfg.max_vals[channel] - cfg.min_vals[channel]) +
+            #                                  cfg.min_vals[channel])
             loss = criterion(test_batch[IN_LEN:, :, :3], test_pred, decouple_loss)
             test_loss += loss.item()
             test_batch_numpy = test_batch.cpu().numpy()
@@ -146,7 +146,7 @@ def train_and_test(model, optimizer, criterion, train_epoch, valid_epoch, loader
         writer.close()
 
 
-def test(model, criterion, test_loader, train_epoch, cfg):
+def test(model, criterion, test_loader, train_epoch, cfg, train_len):
     if not is_master_proc():
         return
     test_loss = 0.0
@@ -169,6 +169,13 @@ def test(model, criterion, test_loader, train_epoch, cfg):
             test_pred[:, :, 2] = (test_pred[:, :, 2] * (cfg.max_vals[2] - cfg.min_vals[2]) +
                                         cfg.min_vals[2])
 
+            test_batch[:, :, 0] = (test_batch[:, :, 0] * (cfg.max_vals[0] - cfg.min_vals[0]) * 1.5 +
+                                        cfg.min_vals[0])
+            test_batch[:, :, 1] = (test_batch[:, :, 1] * (cfg.max_vals[1] - cfg.min_vals[1]) +
+                                        cfg.min_vals[1])
+            test_batch[:, :, 2] = (test_batch[:, :, 2] * (cfg.max_vals[2] - cfg.min_vals[2]) +
+                                        cfg.min_vals[2])
+
             loss = criterion(test_batch[IN_LEN:, :, :3], test_pred, decouple_loss)
             test_loss += loss.item()
             test_batch_numpy = test_batch.cpu().numpy()
@@ -185,7 +192,7 @@ def test(model, criterion, test_loader, train_epoch, cfg):
                     shutil.rmtree(cfg.root_path + f'videos/Forecast/{cfg.model_name}')
                 # print(test_batch_numpy.shape) (12, 8, 3, 81, 91)
                 for batch_day in range(test_batch.shape[1]):
-                    day = datetime.datetime(2019, 1, 1) + datetime.timedelta(days = batch_day)
+                    day = datetime.datetime(2019, 1, 1) + datetime.timedelta(days=train_len + batch_day)
                     real_values = deepcopy(test_batch_numpy[IN_LEN:, :, :3].reshape(cfg.out_len, -1, test_pred_numpy.shape[2],
                                                                          test_pred_numpy.shape[3], test_pred_numpy.shape[4]))
 

@@ -109,4 +109,4 @@ if not start_year == 2019:
 
 # test and plot
 if start_year == 2019:
-    test(model, criterion, test_loader, train_epoch, cfg)
+    test(model, criterion, test_loader, train_epoch, cfg, len(train_data))

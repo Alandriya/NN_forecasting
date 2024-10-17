@@ -1,7 +1,7 @@
-# files_path_prefix = '/home/aosipova/EM_ocean/'
-# SHORT_POSTFIX = ''
-files_path_prefix = 'E:/Nastya/Data/OceanFull/'
-SHORT_POSTFIX = '_short'
+files_path_prefix = '/home/aosipova/EM_ocean/'
+SHORT_POSTFIX = ''
+# files_path_prefix = 'E:/Nastya/Data/OceanFull/'
+# SHORT_POSTFIX = '_short'
 # files_path_prefix = 'D:/Programming/PythonProjects/Alana/Data/'
 # SHORT_POSTFIX = '_short'
 
@@ -52,9 +52,9 @@ cfg = OrderedEasyDict()
 # MS-ConvLSTM-WO-Skip  MS-ConvLSTM-UNet3+  MS-ConvLSTM-FC
 # MS-LSTM  MK-LSTM
 
-cfg.start_year = 2019
-cfg.features_amount = 3
-cfg.model_name = 'ConvLSTM'
+cfg.start_year = 1979
+cfg.features_amount = 6
+cfg.model_name = 'MS-LSTM'
 
 cfg.LOAD_MODEL = True
 cfg.DELETE_OLD_MODEL = False
