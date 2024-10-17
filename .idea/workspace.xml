@@ -5,58 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="60a47fb4-6e4c-49af-a9b4-3515bd9755db" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/NN_forecasting.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/SSIM.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/earlystopping.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/img_local_att/README.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/img_local_att/build/lib.linux-x86_64-3.7/localAttention.cpython-37m-x86_64-linux-gnu.so" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/img_local_att/build/temp.linux-x86_64-3.7/build.ninja" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/img_local_att/build/temp.linux-x86_64-3.7/localAttention.o" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/img_local_att/build/temp.linux-x86_64-3.7/src/similar.o" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/img_local_att/build/temp.linux-x86_64-3.7/src/weighting.o" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/img_local_att/dist/localAttention-0.0.0-py3.7-linux-x86_64.egg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/img_local_att/function.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/img_local_att/localAttention.cpp" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/img_local_att/localAttention.egg-info/PKG-INFO" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/img_local_att/localAttention.egg-info/SOURCES.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/img_local_att/localAttention.egg-info/dependency_links.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/img_local_att/localAttention.egg-info/top_level.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/img_local_att/localAttention.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/img_local_att/setup.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/img_local_att/src/kernels.cuh" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/img_local_att/src/similar.cu" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/img_local_att/src/utils.cuh" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/img_local_att/src/weighting.cu" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/img_local_att/test.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/img_local_att/test/README.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/img_local_att/test/denoise.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/img_local_att/test/function.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/img_local_att/test/module.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/img_local_att/test/similar.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/img_local_att/test/test.sh" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/img_local_att/test/weighting.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/loader.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/loss.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ml_runner.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/model.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/models/convlstm.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/models/ms_lstm.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/models/preciplstm.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/models/predrnn_v2.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/net_params.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/nn_runner.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/plotter.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/train_and_test.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/plotter.py" beforeDir="false" afterPath="$PROJECT_DIR$/plotter.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/train_and_test.py" beforeDir="false" afterPath="$PROJECT_DIR$/train_and_test.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

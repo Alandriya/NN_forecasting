@@ -45,12 +45,12 @@ LR = cfg.LR
 
 parser = argparse.ArgumentParser()
 # parser.add_argument("features_amount", type=int)
-parser.add_argument("start_year", type=int)
+# parser.add_argument("start_year", type=int)
 # parser.add_argument("model_name", type=int)
 # parser.add_argument("local_rank", type=int, default=-1, help='node rank for distributed training')
-args = parser.parse_args()
+# args = parser.parse_args()
 # cfg.features_amount = args.features_amount
-start_year = args.start_year
+start_year = cfg.start_year
 end_year, offset = count_offset(start_year)
 # cfg.model_name = args.model_name
 # torch.cuda.set_device(args.local_rank)
@@ -104,7 +104,8 @@ loader = [train_loader, test_loader, valid_loader]
 criterion = Loss().cuda()
 
 # train valid test
-train_and_test(model, optimizer, criterion, train_epoch, valid_epoch, loader, train_sampler)
+if not start_year == 2019:
+    train_and_test(model, optimizer, criterion, train_epoch, valid_epoch, loader, train_sampler)
 
 # test and plot
 if start_year == 2019:

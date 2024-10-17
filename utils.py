@@ -85,8 +85,8 @@ def normalize_data_cuda(batch, min_vals, max_vals):
     # print(f'min_vals = {min_vals}')
     # print(f'max_vals = {max_vals}')
     batch = torch.permute(batch, (1, 0, 2, 3, 4))  # S x B x C x H x W
-    # for channel in range(batch.shape[2]):
-    #     batch[:, :, channel] = (batch[:, :, channel] - min_vals[channel]) / max_vals[channel]
+    # for channel in range(3):
+    #     batch[:, :, channel] = (batch[:, :, channel] - min_vals[channel]) / (max_vals[channel] - min_vals[channel])
     return batch.cuda()
 
 

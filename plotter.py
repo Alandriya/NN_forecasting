@@ -1,3 +1,4 @@
+import copy
 import datetime
 import os
 from sklearn.metrics import mean_absolute_percentage_error
@@ -7,8 +8,8 @@ import numpy as np
 import tqdm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.colors as colors
-files_path_prefix = 'D://Data/OceanFull/'
-
+# files_path_prefix = 'D://Data/OceanFull/'
+import seaborn as sns
 
 def hex_to_rgb(value):
     """
@@ -65,71 +66,100 @@ def plot_predictions(files_path_prefix: str,
                      model_name: str,
                      features_amount: int,
                      start_day: datetime.datetime,
-                     mask: np.ndarray):
+                     mask: np.ndarray,
+                     cfg: None):
     # print('Plotting')
+    # (5, 3, 81, 91)
+    # sns.set_style("whitegrid")
     if not os.path.exists(files_path_prefix + f'videos/Forecast/{model_name}'):
         os.mkdir(files_path_prefix + f'videos/Forecast/{model_name}')
 
     days_prediction = Y_predict.shape[0]
 
+    Y_test[:, :, np.logical_not(mask)] = np.nan
+    Y_predict[:, :, np.logical_not(mask)] = np.nan
+
     # axs[0].set_title('Real values', fontsize=20)
     # axs[1].set_title('Predicted values', fontsize=20)
     # axs[2].set_title('Absolute difference', fontsize=20)
 
+    flux_min = min(np.nanmin(Y_test[:, 0]), np.nanmin(Y_predict[:, 0]))
+    flux_max = max(np.nanmax(Y_test[:, 0]), np.nanmax(Y_predict[:, 0]))
+
+    sst_min = min(np.nanmin(Y_test[:, 1]), np.nanmin(Y_predict[:, 1]))
+    sst_max = max(np.nanmax(Y_test[:, 1]), np.nanmax(Y_predict[:, 1]))
+
+    press_min = min(np.nanmin(Y_test[:, 2]), np.nanmin(Y_predict[:, 2]))
+    press_max = max(np.nanmax(Y_test[:, 2]), np.nanmax(Y_predict[:, 2]))
+
+    cmap_flux = get_continuous_cmap(['#000080', '#ffffff', '#ff0000'],
+                                    [0, (1.0 - flux_min) / (flux_max - flux_min), 1])
+    cmap_flux.set_bad('lightgreen', 1.0)
+    # cmap_sst = get_continuous_cmap(['#ffffff', '#ff0000'], [0, 1])
+    cmap_sst = plt.get_cmap('Oranges').copy()
+    cmap_sst.set_bad('lightgreen', 1.0)
+    # cmap_press = get_continuous_cmap(['#ffffff', '#ff0000'], [0, 1])
+    cmap_press = plt.get_cmap('Purples').copy()
+    cmap_press.set_bad('lightgreen', 1.0)
+
+    cmap_diff = plt.get_cmap('Reds').copy()
+    cmap_diff.set_bad('lightgreen', 1.0)
+
+    x_label_list = ['90W', '60W', '30W', '0']
+    y_label_list = ['EQ', '30N', '60N', '80N']
+    xticks = [0, 30, 60, 90]
+    yticks = [80, 50, 20, 0]
+
     for k in range(3):
         fig, axs = plt.subplots(3, days_prediction, figsize=(5 * days_prediction, 15))
-
         img = [[None for _ in range(days_prediction)] for _ in range(3)]
         cax = [[None for _ in range(days_prediction)] for _ in range(3)]
-
-        test_min = np.nanmin(Y_test[:, :, :, k])
-        test_max = np.nanmax(Y_test[:, :, :, k])
-
-        pred_min = np.nanmin(Y_predict[:, :, :, k])
-        pred_max = np.nanmax(Y_predict[:, :, :, k])
-
-        y_min = min(test_min, pred_min)
-        y_max = max(test_max, pred_max)
-
-        cmap = get_continuous_cmap(['#000080', '#ffffff', '#ff0000'], [0, (1.0 - y_min) / (y_max - y_min), 1])
-        cmap.set_bad('darkgreen', 1.0)
-
-        cmap_diff = plt.get_cmap('Reds').copy()
-        cmap_diff.set_bad('darkgreen', 1.0)
-
-        Y_test[:, :, np.logical_not(mask)] = np.nan
-        Y_predict[:, :,  np.logical_not(mask)] = np.nan
+        if k == 0:
+            cmap_test = cmap_pred = copy.deepcopy(cmap_flux)
+            test_min = pred_min = flux_min
+            test_max = pred_max = flux_max
+        elif k == 1:
+            cmap_test = cmap_pred = copy.deepcopy(cmap_sst)
+            test_min = pred_min = sst_min
+            test_max = pred_max = sst_max
+        else:
+            cmap_test = cmap_pred = copy.deepcopy(cmap_press)
+            test_min = pred_min = press_min
+            test_max = pred_max = press_max
 
         for t in range(days_prediction):
             ypredict = Y_predict[t, k, :, :]
             ytest = Y_test[t, k, :, :]
             difference = np.array(np.abs(ypredict - ytest))
             day_str = (start_day + datetime.timedelta(days=t)).strftime('%d.%m.%Y')
-            # day_str = f'day {t}'
+            axs[0][t].set_title(f'{day_str}, real values', fontsize=16)
+            axs[1][t].set_title(f'{day_str}, predictions', fontsize=16)
+            axs[2][t].set_title(f'{day_str}, absolute difference', fontsize=16)
             for i in range(3):
                 divider = make_axes_locatable(axs[i][t])
                 cax[i][t] = divider.append_axes('right', size='5%', pad=0.3)
+                axs[i][t].set_xticks(xticks)
+                axs[i][t].set_yticks(yticks)
+                axs[i][t].set_xticklabels(x_label_list)
+                axs[i][t].set_yticklabels(y_label_list)
 
-                axs[0][t].set_title(f'{day_str}, real values', fontsize=16)
-                img[0][t] = axs[0][t].imshow(ytest,
-                                             interpolation='none',
-                                             cmap=cmap,
-                                             vmin=test_min,
-                                             vmax=test_max)
+            img[0][t] = axs[0][t].imshow(ytest,
+                                         interpolation='none',
+                                         cmap=cmap_test,
+                                         vmin=test_min,
+                                         vmax=test_max)
 
-                axs[1][t].set_title(f'{day_str}, predictions', fontsize=16)
-                img[1][t] = axs[1][t].imshow(ypredict,
-                                             interpolation='none',
-                                             cmap=cmap,
-                                             vmin=pred_min,
-                                             vmax=pred_max)
+            img[1][t] = axs[1][t].imshow(ypredict,
+                                         interpolation='none',
+                                         cmap=cmap_pred,
+                                         vmin=pred_min,
+                                         vmax=pred_max)
 
-                axs[2][t].set_title(f'{day_str}, absolute difference', fontsize=16)
-                img[2][t] = axs[2][t].imshow(difference,
-                                             interpolation='none',
-                                             cmap=cmap_diff,
-                                             vmin=0,
-                                             vmax=np.nanmax(difference))
+            img[2][t] = axs[2][t].imshow(difference,
+                                         interpolation='none',
+                                         cmap=cmap_diff,
+                                         vmin=0,
+                                         vmax=np.nanmax(difference))
 
             for i in range(3):
                 fig.colorbar(img[i][t], cax=cax[i][t], orientation='vertical')
