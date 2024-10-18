@@ -9,9 +9,11 @@ class Loss(nn.Module):
         pass
 
     def forward(self, truth, pred, decouple_loss):
-        differ = truth - pred  # s b c h w
-        mse = torch.sum(differ ** 2, (2, 3, 4))  # s b
-        mae = torch.sum(torch.abs(differ), (2, 3, 4))  # s b
+        # print(truth.shape)
+        # print(pred.shape)
+        differ = truth - pred  # b s c h w
+        mse = torch.sum(differ ** 2, (2, 3, 4))  # b s
+        mae = torch.sum(torch.abs(differ), (2, 3, 4))  # b s
         mse = torch.mean(mse)  # 1
         mae = torch.mean(mae)  # 1
         loss = mse + mae

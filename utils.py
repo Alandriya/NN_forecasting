@@ -25,7 +25,7 @@ decimals = cfg.metrics_decimals
 
 
 def sum_batch(data):
-    return data.sum(axis=1)
+    return data.sum(axis=0)
 
 
 def as_type(data):
@@ -50,8 +50,8 @@ class Evaluation(object):
         self._mae[:] = 0
 
     def update(self, gt, pred):
-        batch_size = gt.shape[1]
-        assert gt.shape[0] == self._seq_len
+        batch_size = gt.shape[0]
+        assert gt.shape[1] == self._seq_len
         assert gt.shape == pred.shape
 
         if self._use_central:
@@ -63,7 +63,7 @@ class Evaluation(object):
         self._total_batch_num += batch_size
         ssim = get_SSIM(prediction=pred, truth=gt)
 
-        # # S*B*1*H*W
+        # # B*S*C*H*W
         mse = np.square(pred - gt).sum(axis=(2, 3, 4))
         mae = np.abs(pred - gt).sum(axis=(2, 3, 4))
 
@@ -84,7 +84,7 @@ def normalize_data_cuda(batch, min_vals, max_vals):
     #print(type(batch))
     # print(f'min_vals = {min_vals}')
     # print(f'max_vals = {max_vals}')
-    batch = torch.permute(batch, (1, 0, 2, 3, 4))  # S x B x C x H x W
+    # batch = torch.permute(batch, (1, 0, 2, 3, 4))  # S x B x C x H x W
     for channel in range(3):
         batch[:, :, channel] = (batch[:, :, channel] - min_vals[channel]) / (max_vals[channel] - min_vals[channel])
     return batch.cuda()

@@ -49,7 +49,7 @@ def train_and_test(model, optimizer, criterion, train_epoch, valid_epoch, loader
             # for channel in range(3):
             #     train_pred[:, :, channel] = (train_pred[:, :, channel] * (cfg.max_vals[channel] - cfg.min_vals[channel]) +
             #                                  cfg.min_vals[channel])
-            loss = criterion(train_batch[IN_LEN:, :, :3], train_pred, decouple_loss)
+            loss = criterion(train_batch[:, IN_LEN:, :3], train_pred, decouple_loss)
             loss.backward()
             optimizer.step()
             loss = reduce_tensor(loss)  # all reduce
@@ -97,7 +97,7 @@ def train_and_test(model, optimizer, criterion, train_epoch, valid_epoch, loader
                     # for channel in range(3):
                     #     valid_pred[:, :, channel] = (valid_pred[:, :, channel] * (cfg.max_vals[channel] - cfg.min_vals[channel]) +
                     #                 cfg.min_vals[channel])
-                    loss = criterion(valid_batch[IN_LEN:, :, :3], valid_pred, decouple_loss)
+                    loss = criterion(valid_batch[:, IN_LEN:, :3], valid_pred, decouple_loss)
                     loss = reduce_tensor(loss)  # all reduce
                     valid_loss += loss.item()
             valid_loss = valid_loss / len(valid_loader)
@@ -124,11 +124,11 @@ def train_and_test(model, optimizer, criterion, train_epoch, valid_epoch, loader
             # for channel in range(3):
             #     test_pred[:, :, channel] = (test_pred[:, :, channel] * (cfg.max_vals[channel] - cfg.min_vals[channel]) +
             #                                  cfg.min_vals[channel])
-            loss = criterion(test_batch[IN_LEN:, :, :3], test_pred, decouple_loss)
+            loss = criterion(test_batch[:, IN_LEN:, :3], test_pred, decouple_loss)
             test_loss += loss.item()
             test_batch_numpy = test_batch.cpu().numpy()
             test_pred_numpy = test_pred.cpu().numpy()
-            eval_.update(test_batch_numpy[IN_LEN:, :, :3], test_pred_numpy)
+            eval_.update(test_batch_numpy[:, IN_LEN:, :3], test_pred_numpy)
 
     if is_master_proc():
         test_metrics_lis = eval_.get_metrics()
@@ -159,49 +159,29 @@ def test(model, criterion, test_loader, train_epoch, cfg, train_len):
         for idx, test_batch in enumerate(test_loader):
             test_batch = normalize_data_cuda(test_batch, cfg.min_vals, cfg.max_vals)
             test_pred, decouple_loss = model([test_batch, 0, train_epoch], mode='test')
-            # for channel in range(3):
-            #     test_pred[:, :, channel] = (test_pred[:, :, channel] * (cfg.max_vals[channel] - cfg.min_vals[channel]) +
-            #                                  cfg.min_vals[channel])
-            test_pred[:, :, 0] = (test_pred[:, :, 0] * (cfg.max_vals[0] - cfg.min_vals[0]) * 1.5 +
-                                        cfg.min_vals[0])
-            test_pred[:, :, 1] = (test_pred[:, :, 1] * (cfg.max_vals[1] - cfg.min_vals[1]) +
-                                        cfg.min_vals[1])
-            test_pred[:, :, 2] = (test_pred[:, :, 2] * (cfg.max_vals[2] - cfg.min_vals[2]) +
-                                        cfg.min_vals[2])
-
-            test_batch[:, :, 0] = (test_batch[:, :, 0] * (cfg.max_vals[0] - cfg.min_vals[0]) * 1.5 +
-                                        cfg.min_vals[0])
-            test_batch[:, :, 1] = (test_batch[:, :, 1] * (cfg.max_vals[1] - cfg.min_vals[1]) +
-                                        cfg.min_vals[1])
-            test_batch[:, :, 2] = (test_batch[:, :, 2] * (cfg.max_vals[2] - cfg.min_vals[2]) +
-                                        cfg.min_vals[2])
-
-            loss = criterion(test_batch[IN_LEN:, :, :3], test_pred, decouple_loss)
+            loss = criterion(test_batch[:, IN_LEN:, :3], test_pred, decouple_loss)
             test_loss += loss.item()
             test_batch_numpy = test_batch.cpu().numpy()
             test_pred_numpy = test_pred.cpu().numpy()
-            eval_.update(test_batch_numpy[IN_LEN:, :, :3], test_pred_numpy)
-
-            # if test_batch.shape[1] == cfg.batch:
-            #     ssim += get_SSIM(test_batch_numpy[IN_LEN:, :, :3], test_pred_numpy)
-            #     batch_count += 1
+            eval_.update(test_batch_numpy[:, IN_LEN:, :3], test_pred_numpy)
 
             if is_master_proc() and idx == 0:
                 print('Plotting', flush=True)
                 if os.path.exists(cfg.root_path + f'videos/Forecast/{cfg.model_name}'):
                     shutil.rmtree(cfg.root_path + f'videos/Forecast/{cfg.model_name}')
                 # print(test_batch_numpy.shape) (12, 8, 3, 81, 91)
-                for batch_day in range(test_batch.shape[1]):
+                for batch_day in range(test_batch.shape[0]):
                     day = datetime.datetime(2019, 1, 1) + datetime.timedelta(days=train_len + batch_day)
-                    real_values = deepcopy(test_batch_numpy[IN_LEN:, :, :3].reshape(cfg.out_len, -1, test_pred_numpy.shape[2],
+                    real_values = deepcopy(test_batch_numpy[:, IN_LEN:, :3].reshape(-1, cfg.out_len, test_pred_numpy.shape[2],
                                                                          test_pred_numpy.shape[3], test_pred_numpy.shape[4]))
 
-                    predictions = deepcopy(test_pred_numpy.reshape(cfg.out_len, -1, test_pred_numpy.shape[2],
+                    predictions = deepcopy(test_pred_numpy.reshape(-1, cfg.out_len, test_pred_numpy.shape[2],
                                                                          test_pred_numpy.shape[3], test_pred_numpy.shape[4]))
-
-                    real_values = np.transpose(real_values, axes=(1, 0, 2, 3, 4))
-                    # print(real_values.shape) (8, 5, 3, 81, 91)
-                    predictions = np.transpose(predictions, axes=(1, 0, 2, 3, 4))
+                    for channel in range(3):
+                        max_val = cfg.max_vals[channel].numpy()
+                        min_val = cfg.min_vals[channel].numpy()
+                        real_values[:, :, channel] = real_values[:, :, channel] * (max_val - min_val) + min_val
+                        predictions[:, :, channel] = predictions[:, :, channel] * (max_val - min_val) + min_val
                     plot_predictions(cfg.root_path, real_values[batch_day], predictions[batch_day], cfg.model_name,
                                      cfg.features_amount, day, load_mask(cfg.root_path), cfg)
     # print(f'SSIM test full = {ssim/batch_count}')

@@ -46,15 +46,14 @@ class OrderedEasyDict(OrderedDict):
 
 cfg = OrderedEasyDict()
 
-
 # ConvLSTM  TrajGRU  PredRNN  PredRNN++  MIM  MotionRNN  PredRNN-V2  PrecipLSTM  CMS-LSTM  MoDeRNN
 # MS-ConvLSTM  MS-TrajGRU  MS-PredRNN  MS-PredRNN++  MS-MIM  MS-MotionRNN  MS-PredRNN-V2  MS-PrecipLSTM  MS-CMS-LSTM  MS-MoDeRNN
 # MS-ConvLSTM-WO-Skip  MS-ConvLSTM-UNet3+  MS-ConvLSTM-FC
 # MS-LSTM  MK-LSTM
 
 cfg.start_year = 1979
-cfg.features_amount = 6
-cfg.model_name = 'MS-LSTM'
+cfg.features_amount = 3
+cfg.model_name = 'ConvLSTM'
 
 cfg.LOAD_MODEL = True
 cfg.DELETE_OLD_MODEL = False
@@ -63,10 +62,9 @@ cfg.gpu = '0, 1, 2, 3'
 cfg.gpu_nums = len(cfg.gpu.split(','))
 cfg.work_path = 'MS-RNN'
 cfg.dataset = 'Ocean'
-# cfg.data_path = 'Spatiotemporal'
 cfg.lstm_hidden_state = 64
 cfg.kernel_size = 3
-cfg.batch = int(32 / len(cfg.gpu.split(',')))
+cfg.batch = int(64 / len(cfg.gpu.split(',')))
 cfg.LSTM_conv = Conv2d
 cfg.LSTM_deconv = ConvTranspose2d
 cfg.CONV_conv = Conv2d
@@ -75,7 +73,7 @@ cfg.width = 91
 cfg.height = 81
 cfg.in_len = 7
 cfg.out_len = 5
-cfg.epoch = 20
+cfg.epoch = 10
 cfg.min_vals = (0, 0, 0)
 cfg.max_vals = (1, 1, 1)
 

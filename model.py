@@ -48,29 +48,25 @@ class Model(nn.Module):
 
     def forward(self, inputs, mode=''):
         x, eta, epoch = inputs  # s b c h w
-        out_len = cfg.out_len
 
-        outputs = []
-        decouple_losses = []
         layer_hiddens = None
         m = None
         if cfg.model_name in ['MS-LSTM']:
             x = torch.nn.functional.pad(x, (2, 3, 7, 8))
 
-        for t in range(out_len):
+        # b c in h w
+        input = x[:, :cfg.in_len]
+        # print(input.shape) torch.Size([8, 7, 3, 81, 91])
 
-            # print(x.shape)
-            # in b c h w -> b c in h w
-            input = torch.permute(x[t:t+cfg.in_len], dims=(1, 2, 0, 3, 4))
-            # b c in h w -> b c*in h w
-            input = torch.reshape(input, (x.shape[1], x.shape[2]*cfg.in_len, x.shape[3], x.shape[4]))
-            # print(input.shape)
-            output, m, layer_hiddens, decouple_loss = self.rnns(input, m, layer_hiddens, self.embed, self.fc)
-            outputs.append(output)
-            decouple_losses.append(decouple_loss)
-        outputs = torch.stack(outputs)  # out b c h w
+        # b c in h w -> b c*in h w
+        input = torch.reshape(input, (input.shape[0], input.shape[1] * input.shape[2], input.shape[3], input.shape[4]))
+        output, m, layer_hiddens, decouple_loss = self.rnns(input, m, layer_hiddens, self.embed, self.fc)
+
+        # print(output.shape)
+        # b c*out h w -> b out c h w
+        output = torch.reshape(output, (-1, cfg.out_len, 3, output.shape[2], output.shape[3]))
+        # print(output.shape)
 
         if cfg.model_name in ['MS-LSTM']:
-            outputs = outputs[:, :, :, 7:81 + 7, 2:91 + 2]
-        decouple_losses = torch.stack(decouple_losses)  # out l b c
-        return outputs, decouple_losses
+            output = output[:, :, :, 7:81 + 7, 2:91 + 2]
+        return output, decouple_loss

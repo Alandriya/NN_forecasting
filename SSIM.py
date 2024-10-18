@@ -98,15 +98,15 @@ def get_SSIM(prediction, truth):
     https://github.com/coupriec/VideoPredictionICLR2016/blob/master/image_error_measures.lua#L50-L75
     """
     # print(prediction.shape)
-    s, b, c, h, w = prediction.shape
-    prediction = prediction.reshape((s * b, c, h, w))
+    b, s, c, h, w = prediction.shape
+    prediction = prediction.reshape((b * s, c, h, w))
     prediction = prediction[:, :3]
     # prediction = torch.permute(prediction, dims=(0, 2, 3, 1)).numpy()
     prediction = np.transpose(prediction, axes=(0, 2, 3, 1))
-    truth = truth.reshape((s * b, c, h, w))
+    truth = truth.reshape((b * s, c, h, w))
     truth = truth[:, :3]
     truth = np.transpose(truth, axes=(0, 2, 3, 1))
     # truth = torch.permute(truth, dims=(0, 2, 3, 1)).numpy()
 
     ssim, cs = _SSIMForMultiScale(img1=prediction, img2=truth, max_val=1.0)
-    return ssim.reshape((s, b, 3))
+    return ssim.reshape((b, s, 3))
