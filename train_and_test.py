@@ -140,10 +140,12 @@ def train_and_test(model, optimizer, criterion, train_epoch, valid_epoch, loader
         print('Running time: {} hours'.format(running_time))
         print("===============================")
         print(f'Test loss: {test_loss}')
+        print(f'Test SSIM: {np.sum(test_metrics_lis[0], axis=0)/cfg.out_len}')
         eval_.clear_all()
 
     if is_master_proc():
         writer.close()
+        torch.distributed.destroy_process_group()
 
 
 def test(model, criterion, test_loader, train_epoch, cfg, train_len):
@@ -159,6 +161,9 @@ def test(model, criterion, test_loader, train_epoch, cfg, train_len):
         for idx, test_batch in enumerate(test_loader):
             test_batch = normalize_data_cuda(test_batch, cfg.min_vals, cfg.max_vals)
             test_pred, decouple_loss = model([test_batch, 0, train_epoch], mode='test')
+            # for channel in range(3):
+            #     test_pred[:, :, channel] = (test_pred[:, :, channel] * (cfg.max_vals[channel] - cfg.min_vals[channel]) +
+            #                                  cfg.min_vals[channel])
             loss = criterion(test_batch[:, IN_LEN:, :3], test_pred, decouple_loss)
             test_loss += loss.item()
             test_batch_numpy = test_batch.cpu().numpy()
@@ -195,5 +200,7 @@ def test(model, criterion, test_loader, train_epoch, cfg, train_len):
         test_metrics_lis.append(test_loss)
         print("===============================")
         print(f'Test loss: {test_loss}')
+        print(f'Test SSIM: {np.sum(test_metrics_lis[0], axis=0)/cfg.out_len}')
         eval_.clear_all()
+        torch.distributed.destroy_process_group()
     return

@@ -96,10 +96,14 @@ def plot_predictions(files_path_prefix: str,
                                     [0, (1.0 - flux_min) / (flux_max - flux_min), 1])
     cmap_flux.set_bad('lightgreen', 1.0)
     # cmap_sst = get_continuous_cmap(['#ffffff', '#ff0000'], [0, 1])
-    cmap_sst = plt.get_cmap('Oranges').copy()
+    # cmap_sst = plt.get_cmap('Oranges').copy()
+    cmap_sst = get_continuous_cmap(['#000080', '#ffffff', '#ff0000'],
+                                    [0, (1.0 - sst_min) / (sst_max - sst_min), 1])
     cmap_sst.set_bad('lightgreen', 1.0)
     # cmap_press = get_continuous_cmap(['#ffffff', '#ff0000'], [0, 1])
-    cmap_press = plt.get_cmap('Purples').copy()
+    # cmap_press = plt.get_cmap('Purples').copy()
+    cmap_press = get_continuous_cmap(['#000080', '#ffffff', '#ff0000'],
+                                    [0, (1.0 - press_min) / (press_max - press_min), 1])
     cmap_press.set_bad('lightgreen', 1.0)
 
     cmap_diff = plt.get_cmap('Reds').copy()
@@ -109,6 +113,9 @@ def plot_predictions(files_path_prefix: str,
     y_label_list = ['EQ', '30N', '60N', '80N']
     xticks = [0, 30, 60, 90]
     yticks = [80, 50, 20, 0]
+
+    print(Y_test[0, 0])
+    print(Y_predict[0, 0])
 
     for k in range(3):
         fig, axs = plt.subplots(3, days_prediction, figsize=(5 * days_prediction, 15))

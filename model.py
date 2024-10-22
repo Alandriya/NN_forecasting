@@ -51,22 +51,21 @@ class Model(nn.Module):
 
         layer_hiddens = None
         m = None
-        if cfg.model_name in ['MS-LSTM']:
-            x = torch.nn.functional.pad(x, (2, 3, 7, 8))
+
+        x = torch.nn.functional.pad(x, (2, 3, 7, 8))
 
         # b c in h w
         input = x[:, :cfg.in_len]
         # print(input.shape) torch.Size([8, 7, 3, 81, 91])
 
-        # b c in h w -> b c*in h w
+        # b in c h w -> b in*c h w
         input = torch.reshape(input, (input.shape[0], input.shape[1] * input.shape[2], input.shape[3], input.shape[4]))
         output, m, layer_hiddens, decouple_loss = self.rnns(input, m, layer_hiddens, self.embed, self.fc)
 
         # print(output.shape)
-        # b c*out h w -> b out c h w
+        # b out*c h w -> b out c h w
         output = torch.reshape(output, (-1, cfg.out_len, 3, output.shape[2], output.shape[3]))
         # print(output.shape)
 
-        if cfg.model_name in ['MS-LSTM']:
-            output = output[:, :, :, 7:81 + 7, 2:91 + 2]
+        output = output[:, :, :, 7:81 + 7, 2:91 + 2]
         return output, decouple_loss

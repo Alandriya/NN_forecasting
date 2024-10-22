@@ -71,7 +71,6 @@ class MS_LSTM(nn.Module):
         super().__init__()
         self.n_layers = cfg.LSTM_layers
         B, H, W = b_h_w
-        H, W = 96, 96
         lstm = [MK_LSTM_Cell(input_channel, output_channel, [B, H, W], kernel_size, stride, padding),
                 MK_LSTM_Cell(input_channel, output_channel, [B, H // 2, W // 2], kernel_size, stride, padding),
                 MK_LSTM_Cell(input_channel, output_channel, [B, H // 4, W // 4], kernel_size, stride, padding),

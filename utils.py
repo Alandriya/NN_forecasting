@@ -23,7 +23,6 @@ gpu_nums = cfg.gpu_nums
 decimals = cfg.metrics_decimals
 
 
-
 def sum_batch(data):
     return data.sum(axis=0)
 
@@ -71,7 +70,6 @@ class Evaluation(object):
         self._mse += sum_batch(mse)
         self._mae += sum_batch(mae)
 
-
     def get_metrics(self):
         ssim = self._ssim / self._total_batch_num
         mse = self._mse / self._total_batch_num
@@ -81,10 +79,6 @@ class Evaluation(object):
 
 
 def normalize_data_cuda(batch, min_vals, max_vals):
-    #print(type(batch))
-    # print(f'min_vals = {min_vals}')
-    # print(f'max_vals = {max_vals}')
-    # batch = torch.permute(batch, (1, 0, 2, 3, 4))  # S x B x C x H x W
     for channel in range(3):
         batch[:, :, channel] = (batch[:, :, channel] - min_vals[channel]) / (max_vals[channel] - min_vals[channel])
     return batch.cuda()

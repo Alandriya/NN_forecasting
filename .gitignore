@@ -3,6 +3,3 @@
 *.sock
 *.ini
 *.log
-
-venv/
-Forecasting/darts_logs/*

@@ -1,7 +1,7 @@
-files_path_prefix = '/home/aosipova/EM_ocean/'
-SHORT_POSTFIX = ''
-# files_path_prefix = 'E:/Nastya/Data/OceanFull/'
-# SHORT_POSTFIX = '_short'
+# files_path_prefix = '/home/aosipova/EM_ocean/'
+# SHORT_POSTFIX = ''
+files_path_prefix = 'E:/Nastya/Data/OceanFull/'
+SHORT_POSTFIX = '_short'
 # files_path_prefix = 'D:/Programming/PythonProjects/Alana/Data/'
 # SHORT_POSTFIX = '_short'
 
@@ -51,9 +51,9 @@ cfg = OrderedEasyDict()
 # MS-ConvLSTM-WO-Skip  MS-ConvLSTM-UNet3+  MS-ConvLSTM-FC
 # MS-LSTM  MK-LSTM
 
-cfg.start_year = 1979
+cfg.start_year = 2019
 cfg.features_amount = 3
-cfg.model_name = 'ConvLSTM'
+cfg.model_name = 'Att-Unet'
 
 cfg.LOAD_MODEL = True
 cfg.DELETE_OLD_MODEL = False
@@ -62,8 +62,8 @@ cfg.gpu = '0, 1, 2, 3'
 cfg.gpu_nums = len(cfg.gpu.split(','))
 cfg.work_path = 'MS-RNN'
 cfg.dataset = 'Ocean'
-cfg.lstm_hidden_state = 64
-cfg.kernel_size = 3
+cfg.lstm_hidden_state = 32
+cfg.kernel_size = 2
 cfg.batch = int(64 / len(cfg.gpu.split(',')))
 cfg.LSTM_conv = Conv2d
 cfg.LSTM_deconv = ConvTranspose2d
@@ -73,7 +73,7 @@ cfg.width = 91
 cfg.height = 81
 cfg.in_len = 7
 cfg.out_len = 5
-cfg.epoch = 10
+cfg.epoch = 20
 cfg.min_vals = (0, 0, 0)
 cfg.max_vals = (1, 1, 1)
 
@@ -84,7 +84,7 @@ if 'mnist' in cfg.dataset:
 else:
     cfg.valid_num = int(cfg.epoch * 1)
 cfg.valid_epoch = cfg.epoch // cfg.valid_num
-cfg.LR = 0.0003
+cfg.LR = 0.005
 cfg.optimizer = 'Adam'
 cfg.dataloader_thread = 0
 cfg.data_type = np.float32
