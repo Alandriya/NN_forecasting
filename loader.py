@@ -85,9 +85,13 @@ def create_torch_data(files_path_prefix, start_year, end_year, cfg):
     x_train = np.zeros((train_len, cfg.height, cfg.width, cfg.in_len, cfg.features_amount), dtype=float)
     y_train = np.zeros((train_len, cfg.height, cfg.width, cfg.out_len, cfg.features_amount), dtype=float)
 
-    eigenvectors_flux_sst = np.zeros((cfg.height, cfg.width, cfg.in_len))
-    eigenvectors_sst_press = np.zeros((cfg.height, cfg.width, cfg.in_len))
-    eigenvectors_flux_press = np.zeros((cfg.height, cfg.width, cfg.in_len))
+    # eigenvectors_flux_sst = np.zeros((cfg.height, cfg.width, cfg.in_len))
+    # eigenvectors_sst_press = np.zeros((cfg.height, cfg.width, cfg.in_len))
+    # eigenvectors_flux_press = np.zeros((cfg.height, cfg.width, cfg.in_len))
+
+    eigenvectors_flux_flux = np.zeros((cfg.height, cfg.width, cfg.in_len))
+    eigenvectors_sst_sst = np.zeros((cfg.height, cfg.width, cfg.in_len))
+    eigenvectors_press_press = np.zeros((cfg.height, cfg.width, cfg.in_len))
 
     print('Preparing train', flush=True)
     for t in range(train_len):
@@ -105,36 +109,63 @@ def create_torch_data(files_path_prefix, start_year, end_year, cfg):
 
         if cfg.features_amount == 6:
             for t_lag in range(cfg.in_len):
-                # flux - sst
+            #     # flux - sst
+            #     try:
+            #         eigenvectors_flux_sst[:, :, t_lag] = np.load(
+            #             files_path_prefix + f'Eigenvalues/Flux-SST/eigen0_{t + offset + t_lag}.npy').reshape(
+            #             (161, 181))[::2, ::2]
+            #     except FileNotFoundError:
+            #         print(f'Not existing Eigenvalues/Flux-SST/eigen0_{t + offset + t_lag}.npy')
+            #         eigenvectors_flux_sst[:, :, t_lag] = np.zeros((cfg.height, cfg.width))
+            #
+            #     # sst - press
+            #     try:
+            #         eigenvectors_sst_press[:, :, t_lag] = np.load(
+            #             files_path_prefix + f'Eigenvalues/SST-Pressure/eigen0_{t + offset + t_lag}.npy').reshape(
+            #             (161, 181))[::2, ::2]
+            #     except FileNotFoundError:
+            #         print(f'Not existing Eigenvalues/SST-Pressure/eigen0_{t + offset + t_lag}.npy')
+            #         eigenvectors_sst_press[:, :, t_lag] = np.zeros((cfg.height, cfg.width))
+            #
+            #     # flux - press
+            #     try:
+            #         eigenvectors_flux_press[:, :, t_lag] = np.load(
+            #             files_path_prefix + f'Eigenvalues/Flux-Pressure/eigen0_{t + offset + t_lag}.npy').reshape(
+            #             (161, 181))[::2, ::2]
+            #     except FileNotFoundError:
+            #         print(f'Not existing Eigenvalues/Flux-Pressure/eigen0_{t + offset + t_lag}.npy')
+            #         eigenvectors_flux_press[:, :, t_lag] = np.zeros((cfg.height, cfg.width))
+
+                # flux - flux
                 try:
-                    eigenvectors_flux_sst[:, :, t_lag] = np.load(
-                        files_path_prefix + f'Eigenvalues/Flux-SST/eigen0_{t + offset + t_lag}.npy').reshape(
+                    eigenvectors_flux_flux[:, :, t_lag] = np.load(
+                        files_path_prefix + f'Eigenvalues/Flux-Flux/eigen0_{t + offset + t_lag}.npy').reshape(
                         (161, 181))[::2, ::2]
                 except FileNotFoundError:
-                    print(f'Not existing Eigenvalues/Flux-SST/eigen0_{t + offset + t_lag}.npy')
-                    eigenvectors_flux_sst[:, :, t_lag] = np.zeros((cfg.height, cfg.width))
+                    print(f'Not existing Eigenvalues/Flux-Flux/eigen0_{t + offset + t_lag}.npy')
+                    eigenvectors_flux_flux[:, :, t_lag] = np.zeros((cfg.height, cfg.width))
 
-                # sst - press
+                # sst - sst
                 try:
-                    eigenvectors_sst_press[:, :, t_lag] = np.load(
-                        files_path_prefix + f'Eigenvalues/SST-Pressure/eigen0_{t + offset + t_lag}.npy').reshape(
+                    eigenvectors_sst_sst[:, :, t_lag] = np.load(
+                        files_path_prefix + f'Eigenvalues/SST-SST/eigen0_{t + offset + t_lag}.npy').reshape(
                         (161, 181))[::2, ::2]
                 except FileNotFoundError:
-                    print(f'Not existing Eigenvalues/SST-Pressure/eigen0_{t + offset + t_lag}.npy')
-                    eigenvectors_sst_press[:, :, t_lag] = np.zeros((cfg.height, cfg.width))
+                    print(f'Not existing Eigenvalues/SST-SST/eigen0_{t + offset + t_lag}.npy')
+                    eigenvectors_sst_sst[:, :, t_lag] = np.zeros((cfg.height, cfg.width))
 
-                # flux - press
+                # press - press
                 try:
-                    eigenvectors_flux_press[:, :, t_lag] = np.load(
-                        files_path_prefix + f'Eigenvalues/Flux-Pressure/eigen0_{t + offset + t_lag}.npy').reshape(
+                    eigenvectors_press_press[:, :, t_lag] = np.load(
+                        files_path_prefix + f'Eigenvalues/Pressure-Pressure/eigen0_{t + offset + t_lag}.npy').reshape(
                         (161, 181))[::2, ::2]
                 except FileNotFoundError:
-                    print(f'Not existing Eigenvalues/Flux-Pressure/eigen0_{t + offset + t_lag}.npy')
-                    eigenvectors_flux_press[:, :, t_lag] = np.zeros((cfg.height, cfg.width))
+                    print(f'Not existing Eigenvalues/Pressure-Pressure/eigen0_{t + offset + t_lag}.npy')
+                    eigenvectors_press_press[:, :, t_lag] = np.zeros((cfg.height, cfg.width))
 
-            x_train[t, :, :, :, 3] = eigenvectors_flux_sst
-            x_train[t, :, :, :, 4] = eigenvectors_sst_press
-            x_train[t, :, :, :, 5] = eigenvectors_flux_press
+            x_train[t, :, :, :, 3] = eigenvectors_flux_flux
+            x_train[t, :, :, :, 4] = eigenvectors_sst_sst
+            x_train[t, :, :, :, 5] = eigenvectors_press_press
 
     np.nan_to_num(x_train, copy=False)
     np.nan_to_num(y_train, copy=False)
@@ -164,35 +195,67 @@ def create_torch_data(files_path_prefix, start_year, end_year, cfg):
         if cfg.features_amount == 6:
             for t_lag in range(cfg.in_len):
                 # flux - sst
+                # try:
+                #     eigenvectors_flux_sst[:, :, t_lag] = np.load(
+                #         files_path_prefix + f'Eigenvalues/Flux-SST/eigen0_{t_absolute + offset + t_lag}.npy').reshape(
+                #         (161, 181))[::2, ::2]
+                # except FileNotFoundError:
+                #     print(f'Not existing Eigenvalues/Flux-SST/eigen0_{t_absolute + offset + t_lag}.npy')
+                #     eigenvectors_flux_sst[:, :, t_lag] = np.zeros((cfg.height, cfg.width))
+                #
+                # # sst - press
+                # try:
+                #     eigenvectors_sst_press[:, :, t_lag] = np.load(
+                #         files_path_prefix + f'Eigenvalues/SST-Pressure/eigen0_{t_absolute + offset + t_lag}.npy').reshape(
+                #         (161, 181))[::2, ::2]
+                # except FileNotFoundError:
+                #     print(f'Not existing Eigenvalues/SST-Pressure/eigen0_{t_absolute + offset + t_lag}.npy')
+                #     eigenvectors_sst_press[:, :, t_lag] = np.zeros((cfg.height, cfg.width))
+                #
+                # # flux - press
+                # try:
+                #     eigenvectors_flux_press[:, :, t_lag] = np.load(
+                #         files_path_prefix + f'Eigenvalues/Flux-Pressure/eigen0_{t_absolute + offset + t_lag}.npy').reshape(
+                #         (161, 181))[::2, ::2]
+                # except FileNotFoundError:
+                #     print(f'Not existing Eigenvalues/Flux-Pressure/eigen0_{t_absolute + offset + t_lag}.npy')
+                #     eigenvectors_flux_press[:, :, t_lag] = np.zeros((cfg.height, cfg.width))
+
+                # flux - flux
                 try:
-                    eigenvectors_flux_sst[:, :, t_lag] = np.load(
-                        files_path_prefix + f'Eigenvalues/Flux-SST/eigen0_{t_absolute + offset + t_lag}.npy').reshape(
+                    eigenvectors_flux_flux[:, :, t_lag] = np.load(
+                        files_path_prefix + f'Eigenvalues/Flux-Flux/eigen0_{t_absolute + offset + t_lag}.npy').reshape(
                         (161, 181))[::2, ::2]
                 except FileNotFoundError:
-                    print(f'Not existing Eigenvalues/Flux-SST/eigen0_{t_absolute + offset + t_lag}.npy')
-                    eigenvectors_flux_sst[:, :, t_lag] = np.zeros((cfg.height, cfg.width))
+                    print(f'Not existing Eigenvalues/Flux-Flux/eigen0_{t_absolute + offset + t_lag}.npy')
+                    eigenvectors_flux_flux[:, :, t_lag] = np.zeros((cfg.height, cfg.width))
 
-                # sst - press
+                # sst - sst
                 try:
-                    eigenvectors_sst_press[:, :, t_lag] = np.load(
-                        files_path_prefix + f'Eigenvalues/SST-Pressure/eigen0_{t_absolute + offset + t_lag}.npy').reshape(
+                    eigenvectors_sst_sst[:, :, t_lag] = np.load(
+                        files_path_prefix + f'Eigenvalues/SST-SST/eigen0_{t_absolute + offset + t_lag}.npy').reshape(
                         (161, 181))[::2, ::2]
                 except FileNotFoundError:
-                    print(f'Not existing Eigenvalues/SST-Pressure/eigen0_{t_absolute + offset + t_lag}.npy')
-                    eigenvectors_sst_press[:, :, t_lag] = np.zeros((cfg.height, cfg.width))
+                    print(f'Not existing Eigenvalues/SST-SST/eigen0_{t_absolute + offset + t_lag}.npy')
+                    eigenvectors_sst_sst[:, :, t_lag] = np.zeros((cfg.height, cfg.width))
 
-                # flux - press
+                # press - press
                 try:
-                    eigenvectors_flux_press[:, :, t_lag] = np.load(
-                        files_path_prefix + f'Eigenvalues/Flux-Pressure/eigen0_{t_absolute + offset + t_lag}.npy').reshape(
+                    eigenvectors_press_press[:, :, t_lag] = np.load(
+                        files_path_prefix + f'Eigenvalues/Pressure-Pressure/eigen0_{t_absolute + offset + t_lag}.npy').reshape(
                         (161, 181))[::2, ::2]
                 except FileNotFoundError:
-                    print(f'Not existing Eigenvalues/Flux-Pressure/eigen0_{t_absolute + offset + t_lag}.npy')
-                    eigenvectors_flux_press[:, :, t_lag] = np.zeros((cfg.height, cfg.width))
+                    print(f'Not existing Eigenvalues/Pressure-Pressure/eigen0_{t_absolute + offset + t_lag}.npy')
+                    eigenvectors_press_press[:, :, t_lag] = np.zeros((cfg.height, cfg.width))
 
-            x_test[t, :, :, :, 3] = eigenvectors_flux_sst
-            x_test[t, :, :, :, 4] = eigenvectors_sst_press
-            x_test[t, :, :, :, 5] = eigenvectors_flux_press
+
+            # x_test[t, :, :, :, 3] = eigenvectors_flux_sst
+            # x_test[t, :, :, :, 4] = eigenvectors_sst_press
+            # x_test[t, :, :, :, 5] = eigenvectors_flux_press
+
+            x_test[t, :, :, :, 3] = eigenvectors_flux_flux
+            x_test[t, :, :, :, 4] = eigenvectors_sst_sst
+            x_test[t, :, :, :, 5] = eigenvectors_press_press
 
     np.nan_to_num(x_test, copy=False)
     np.nan_to_num(y_test, copy=False)
