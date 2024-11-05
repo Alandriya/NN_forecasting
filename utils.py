@@ -13,6 +13,7 @@ from thop import profile
 from SSIM import get_SSIM
 from earlystopping import EarlyStopping
 from tensorboardX import SummaryWriter
+from torchmetrics.regression.csi import CriticalSuccessIndex
 
 
 IN_LEN = cfg.in_len
@@ -41,12 +42,14 @@ class Evaluation(object):
         self._seq_len = seq_len
         self._use_central = use_central
         self._max_val = max_val
+        self.csi_metrics = CriticalSuccessIndex(threshold=0.5, keep_sequence_dim=2)
 
     def clear_all(self):
         self._total_batch_num = 0
         self._ssim[:] = 0
         self._mse[:] = 0
         self._mae[:] = 0
+        self.csi_metrics = CriticalSuccessIndex(threshold=0.5, keep_sequence_dim=2)
 
     def update(self, gt, pred):
         batch_size = gt.shape[0]
@@ -61,6 +64,7 @@ class Evaluation(object):
 
         self._total_batch_num += batch_size
         ssim = get_SSIM(prediction=pred, truth=gt)
+        self.csi_metrics.update(torch.tensor(pred), torch.tensor(gt))
 
         # # B*S*C*H*W
         mse = np.square(pred - gt).sum(axis=(2, 3, 4))
@@ -74,7 +78,8 @@ class Evaluation(object):
         ssim = self._ssim / self._total_batch_num
         mse = self._mse / self._total_batch_num
         mae = self._mae / self._total_batch_num
-        l_all = [ssim, mse, mae]
+        csi = self.csi_metrics.compute()
+        l_all = [ssim, mse, mae, csi]
         return l_all
 
 
