@@ -84,11 +84,12 @@ elif cfg.model_name == 'Att-Unet':
 # else:
 #     rnn = None
 
-rnn = rnn(input_channel=hs, output_channel=hs, b_h_w=(b, 96, 96), kernel_size=k, stride=s, padding=p)
-# nets = [OrderedDict({'conv_embed': [cfg.features_amount*cfg.in_len, hs, 1, 1, 0, 1]}),
-#         rnn,
-#         OrderedDict({'conv_fc': [hs, 3*cfg.out_len, 1, 1, 0, 1]})]
-nets = [OrderedDict({'conv_embed': [cfg.features_amount*cfg.in_len, hs, 1, 1, 0, 1]}),
-        rnn,
-        OrderedDict({'conv_fc': [hs, 3*cfg.out_len, 1, 1, 0, 1]})]
-# in_channels=v[0], out_channels=v[1],kernel_size=v[2], stride=v[3],padding=v[4], dilation=v[5]
+if cfg.model_name != 'Encoder-Decoder':
+    rnn = rnn(input_channel=hs, output_channel=hs, b_h_w=(b, 96, 96), kernel_size=k, stride=s, padding=p)
+    # nets = [OrderedDict({'conv_embed': [cfg.features_amount*cfg.in_len, hs, 1, 1, 0, 1]}),
+    #         rnn,
+    # #         OrderedDict({'conv_fc': [hs, 3*cfg.out_len, 1, 1, 0, 1]})]
+    nets = [OrderedDict({'conv_embed': [cfg.features_amount*cfg.in_len, hs, 1, 1, 0, 1]}),
+            rnn,
+            OrderedDict({'conv_fc': [hs, 3*cfg.out_len, 1, 1, 0, 1]})]
+    # in_channels=v[0], out_channels=v[1],kernel_size=v[2], stride=v[3],padding=v[4], dilation=v[5]

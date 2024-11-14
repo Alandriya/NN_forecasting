@@ -46,18 +46,18 @@ class OrderedEasyDict(OrderedDict):
 
 cfg = OrderedEasyDict()
 
-# ConvLSTM  TrajGRU  PredRNN  PredRNN++  MIM  MotionRNN  PredRNN-V2  PrecipLSTM  CMS-LSTM  MoDeRNN
-# MS-ConvLSTM  MS-TrajGRU  MS-PredRNN  MS-PredRNN++  MS-MIM  MS-MotionRNN  MS-PredRNN-V2  MS-PrecipLSTM  MS-CMS-LSTM  MS-MoDeRNN
-# MS-ConvLSTM-WO-Skip  MS-ConvLSTM-UNet3+  MS-ConvLSTM-FC
-# MS-LSTM  MK-LSTM
+cfg.start_year = 1979
+cfg.features_amount = 6
+# ConvLSTM  MS-LSTM  Att-Unet
+cfg.model_name = 'Encoder-Decoder'
+cfg.enc_dec_mode = 'train'
+# cfg.enc_dec_mode = 'encode'
 
-cfg.start_year = 2019
-cfg.features_amount = 3
-cfg.model_name = 'Att-Unet'
-
+cfg.bins = 500
 cfg.LOAD_MODEL = True
 cfg.DELETE_OLD_MODEL = False
 cfg.postfix_short = SHORT_POSTFIX
+
 cfg.gpu = '0, 1, 2, 3'
 cfg.gpu_nums = len(cfg.gpu.split(','))
 cfg.work_path = 'MS-RNN'
@@ -71,8 +71,8 @@ cfg.CONV_conv = Conv2d
 
 cfg.width = 91
 cfg.height = 81
-cfg.in_len = 7
-cfg.out_len = 5
+cfg.in_len = 10
+cfg.out_len = 10
 cfg.epoch = 20
 cfg.min_vals = (0, 0, 0)
 cfg.max_vals = (1, 1, 1)
@@ -84,7 +84,7 @@ if 'mnist' in cfg.dataset:
 else:
     cfg.valid_num = int(cfg.epoch * 1)
 cfg.valid_epoch = cfg.epoch // cfg.valid_num
-cfg.LR = 0.005
+cfg.LR = 0.0003
 cfg.optimizer = 'Adam'
 cfg.dataloader_thread = 0
 cfg.data_type = np.float32

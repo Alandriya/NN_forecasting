@@ -8,6 +8,7 @@ import numpy as np
 import tqdm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.colors as colors
+from config import cfg
 # files_path_prefix = 'D://Data/OceanFull/'
 import seaborn as sns
 
@@ -114,8 +115,8 @@ def plot_predictions(files_path_prefix: str,
     xticks = [0, 30, 60, 90]
     yticks = [80, 50, 20, 0]
 
-    print(Y_test[0, 0])
-    print(Y_predict[0, 0])
+    # print(Y_test[0, 0])
+    # print(Y_predict[0, 0])
 
     for k in range(3):
         fig, axs = plt.subplots(3, days_prediction, figsize=(5 * days_prediction, 15))
@@ -253,28 +254,15 @@ def plot_clusters(files_path_prefix: str,
     return
 
 
-# def visualize_model(model, num_images=6):
-#     was_training = model.training
-#     model.eval()
-#     images_so_far = 0
-#     fig = plt.figure()
-#
-#     with torch.no_grad():
-#         for i, (inputs, labels) in enumerate(dataloaders['val']):
-#             inputs = inputs.to(device)
-#             labels = labels.to(device)
-#
-#             outputs = model(inputs)
-#             _, preds = torch.max(outputs, 1)
-#
-#             for j in range(inputs.size()[0]):
-#                 images_so_far += 1
-#                 ax = plt.subplot(num_images//2, 2, images_so_far)
-#                 ax.axis('off')
-#                 ax.set_title(f'predicted: {class_names[preds[j]]}')
-#                 imshow(inputs.cpu().data[j])
-#
-#                 if images_so_far == num_images:
-#                     model.train(mode=was_training)
-#                     return
-#         model.train(mode=was_training)
+def plot_train_loss(files_path_prefix, loss_arr, start_year, end_year, model_name):
+    if not os.path.exists(files_path_prefix + f'videos/Forecast/Loss'):
+        os.mkdir(files_path_prefix + f'videos/Forecast/Loss')
+    fig = plt.figure(figsize=(8, 5))
+    fig.suptitle(f'{model_name} loss, training on {start_year} - {end_year}')
+    x = np.linspace(1, len(loss_arr), len(loss_arr))
+    plt.plot(x, loss_arr, '-o', label='Train loss')
+    plt.xticks(x)
+    plt.xlabel('Iteration')
+    plt.tight_layout()
+    fig.savefig(files_path_prefix + f'videos/Forecast/Loss/{model_name}_{start_year}-{end_year}.png')
+    return

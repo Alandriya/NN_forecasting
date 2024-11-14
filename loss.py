@@ -22,3 +22,20 @@ class Loss(nn.Module):
             decouple_loss = torch.mean(decouple_loss)  # 1
             loss = loss + cfg.decouple_loss_weight * decouple_loss
         return loss
+
+
+class Loss2(nn.Module):
+    def __init__(self):
+        super().__init__()
+        pass
+
+    def forward(self, truth, pred):
+        # print(truth.shape)
+        # print(pred.shape)
+        differ = truth - pred  # b s c h w
+        mse = torch.sum(differ ** 2, (2, 3, 4))  # b s
+        mae = torch.sum(torch.abs(differ), (2, 3, 4))  # b s
+        mse = torch.mean(mse)  # 1
+        mae = torch.mean(mae)  # 1
+        loss = mse + mae
+        return loss
