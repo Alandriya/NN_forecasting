@@ -155,6 +155,7 @@ def test(model, criterion, test_loader, train_epoch, cfg, train_len):
     eval_ = Evaluation(seq_len=OUT_LEN, use_central=False)
     eval_.clear_all()
     model.eval()
+    mask = load_mask(cfg.root_path)
     # ssim = 0.0
     with torch.no_grad():
         # batch_count = 0
@@ -172,8 +173,8 @@ def test(model, criterion, test_loader, train_epoch, cfg, train_len):
 
             if is_master_proc() and idx == 0:
                 print('Plotting', flush=True)
-                if os.path.exists(cfg.root_path + f'videos/Forecast/{cfg.model_name}'):
-                    shutil.rmtree(cfg.root_path + f'videos/Forecast/{cfg.model_name}')
+                # if os.path.exists(cfg.root_path + f'videos/Forecast/{cfg.model_name}'):
+                #     shutil.rmtree(cfg.root_path + f'videos/Forecast/{cfg.model_name}')
                 # print(test_batch_numpy.shape) (12, 8, 3, 81, 91)
                 for batch_day in range(test_batch.shape[0]):
                     day = datetime.datetime(2019, 1, 1) + datetime.timedelta(days=train_len + batch_day)
@@ -188,7 +189,7 @@ def test(model, criterion, test_loader, train_epoch, cfg, train_len):
                         real_values[:, :, channel] = real_values[:, :, channel] * (max_val - min_val) + min_val
                         predictions[:, :, channel] = predictions[:, :, channel] * (max_val - min_val) + min_val
                     plot_predictions(cfg.root_path, real_values[batch_day], predictions[batch_day], cfg.model_name,
-                                     cfg.features_amount, day, load_mask(cfg.root_path), cfg)
+                                     cfg.features_amount, day, mask, cfg)
     # print(f'SSIM test full = {ssim/batch_count}')
     # print(ssim.shape)
     # print(f'SSIM test Flux = {np.sum(ssim[:, :, 0])/ batch_count /cfg.batch / OUT_LEN :.2f}')
@@ -200,7 +201,10 @@ def test(model, criterion, test_loader, train_epoch, cfg, train_len):
         test_metrics_lis.append(test_loss)
         print("===============================")
         print(f'Test loss: {test_loss}')
-        print(f'Test SSIM: {np.sum(test_metrics_lis[0], axis=0)/cfg.out_len}')
+        print(f'Test MSE by points: {np.sum(test_metrics_lis[1])/np.sum(mask)/cfg.batch/3/cfg.out_len:.5f}')
+        print(f'Test MAE by points: {np.sum(test_metrics_lis[2]) /np.sum(mask)/cfg.batch/3/cfg.out_len:.5f}')
+        print(f'Test SSIM: {np.mean(test_metrics_lis[0], axis=0)}')
+        print(f'Test CSI: {test_metrics_lis[3]}')
         eval_.clear_all()
         torch.distributed.destroy_process_group()
     return

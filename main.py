@@ -8,6 +8,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = cfg.gpu
 import torch
 from torch import nn
 from model import Model
+from models.encoder_decoder import Encoder_Decoder
 from loss import Loss
 from train_and_test import train_and_test, test
 from net_params import nets
@@ -35,7 +36,7 @@ def fix_random(seed):
     torch.backends.cudnn.enabled = False
 
 
-fix_random(2022)
+fix_random(2024)
 
 gpu_nums = cfg.gpu_nums
 batch_size = cfg.batch
@@ -59,7 +60,9 @@ end_year, offset = count_offset(start_year)
 torch.distributed.init_process_group(backend="gloo")
 
 # model
-model = Model(nets[0], nets[1], nets[2])
+# model = Model(nets[0], nets[1], nets[2])
+model = Encoder_Decoder(cfg.in_len, cfg.out_len, (cfg.batch, cfg.height, cfg.width), 3, 2, 1)
+
 
 # optimizer
 if cfg.optimizer == 'SGD':

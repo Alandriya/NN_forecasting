@@ -122,9 +122,9 @@ class AttU_Net(nn.Module):
 
         self.Conv_1x1 = nn.Conv2d(64, output_channel, kernel_size=kernel_size, stride=stride, padding=padding)
 
-    def forward(self, x, m, layer_hiddens, embed, fc):
+    def forward(self, x, m, layer_hiddens, encoder, decoder):
         # encoding path
-        x = embed(x)
+        x = encoder(x)
         x1 = self.Conv1(x)
 
         x2 = self.Maxpool(x1)
@@ -163,6 +163,6 @@ class AttU_Net(nn.Module):
         d1 = self.Conv_1x1(d2)
 
         next_layer_hiddens = []
-        x = fc(d1)
+        x = decoder(d1)
         decouple_loss = torch.zeros([cfg.LSTM_layers, cfg.batch, cfg.lstm_hidden_state]).cuda()
         return x, m, next_layer_hiddens, decouple_loss

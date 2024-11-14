@@ -33,6 +33,12 @@ def make_layers(block):
                 layers.append(('leaky_' + layer_name, nn.LeakyReLU(negative_slope=0.2, inplace=True)))
             elif 'prelu' in layer_name:
                 layers.append(('prelu_' + layer_name, nn.PReLU()))
+        elif 'transformer_encoder' in layer_name:
+            encoder_layer = nn.TransformerEncoderLayer(d_model=v[0], nhead=8)
+            layers.append((layer_name, nn.TransformerEncoder(encoder_layer, num_layers=6)))
+        elif 'transformer_decoder' in layer_name:
+            decoder_layer = nn.TransformerDecoderLayer(d_model=v[0], nhead=8)
+            layers.append((layer_name, nn.TransformerDecoder(decoder_layer, num_layers=6)))
         else:
             raise NotImplementedError
 
@@ -40,11 +46,11 @@ def make_layers(block):
 
 
 class Model(nn.Module):
-    def __init__(self, embed, rnn, fc):
+    def __init__(self, encoder, rnn, decoder):
         super().__init__()
-        self.embed = make_layers(embed)
+        self.encoder = make_layers(encoder)
         self.rnns = rnn
-        self.fc = make_layers(fc)
+        self.decoder = make_layers(decoder)
 
     def forward(self, inputs, mode=''):
         x, eta, epoch = inputs  # s b c h w
@@ -60,7 +66,7 @@ class Model(nn.Module):
 
         # b in c h w -> b in*c h w
         input = torch.reshape(input, (input.shape[0], input.shape[1] * input.shape[2], input.shape[3], input.shape[4]))
-        output, m, layer_hiddens, decouple_loss = self.rnns(input, m, layer_hiddens, self.embed, self.fc)
+        output, m, layer_hiddens, decouple_loss = self.rnns(input, m, layer_hiddens, self.encoder, self.decoder)
 
         # print(output.shape)
         # b out*c h w -> b out c h w
