@@ -93,18 +93,23 @@ def plot_predictions(files_path_prefix: str,
     press_min = min(np.nanmin(Y_test[:, 2]), np.nanmin(Y_predict[:, 2]))
     press_max = max(np.nanmax(Y_test[:, 2]), np.nanmax(Y_predict[:, 2]))
 
-    cmap_flux = get_continuous_cmap(['#000080', '#ffffff', '#ff0000'],
-                                    [0, (1.0 - flux_min) / (flux_max - flux_min), 1])
+    # cmap_flux = get_continuous_cmap(['#000080', '#ffffff', '#ff0000'],
+    #                                 [0, (1.0 - flux_min) / (flux_max - flux_min), 1])
+    # cmap_sst = get_continuous_cmap(['#000080', '#ffffff', '#ff0000'],
+    #                                 [0, (1.0 - sst_min) / (sst_max - sst_min), 1])
+    cmap_flux = get_continuous_cmap(['#ffffff', '#ff0000'], [0, 1])
     cmap_flux.set_bad('lightgreen', 1.0)
     # cmap_sst = get_continuous_cmap(['#ffffff', '#ff0000'], [0, 1])
     # cmap_sst = plt.get_cmap('Oranges').copy()
-    cmap_sst = get_continuous_cmap(['#000080', '#ffffff', '#ff0000'],
-                                    [0, (1.0 - sst_min) / (sst_max - sst_min), 1])
+    # cmap_sst = get_continuous_cmap(['#000080', '#ffffff', '#ff0000'],
+    #                                 [0, (1.0 - sst_min) / (sst_max - sst_min), 1])
+    cmap_sst = get_continuous_cmap(['#ffffff', '#ff0000'], [0, 1])
     cmap_sst.set_bad('lightgreen', 1.0)
     # cmap_press = get_continuous_cmap(['#ffffff', '#ff0000'], [0, 1])
     # cmap_press = plt.get_cmap('Purples').copy()
-    cmap_press = get_continuous_cmap(['#000080', '#ffffff', '#ff0000'],
-                                    [0, (1.0 - press_min) / (press_max - press_min), 1])
+    # cmap_press = get_continuous_cmap(['#000080', '#ffffff', '#ff0000'],
+    #                                 [0, (1.0 - press_min) / (press_max - press_min), 1])
+    cmap_press = get_continuous_cmap(['#ffffff', '#ff0000'], [0, 1])
     cmap_press.set_bad('lightgreen', 1.0)
 
     cmap_diff = plt.get_cmap('Reds').copy()
@@ -257,10 +262,10 @@ def plot_clusters(files_path_prefix: str,
 def plot_train_loss(files_path_prefix, loss_arr, start_year, end_year, model_name):
     if not os.path.exists(files_path_prefix + f'videos/Forecast/Loss'):
         os.mkdir(files_path_prefix + f'videos/Forecast/Loss')
-    fig = plt.figure(figsize=(8, 5))
+    fig = plt.figure(figsize=(10, 5))
     fig.suptitle(f'{model_name} loss, training on {start_year} - {end_year}')
-    x = np.linspace(1, len(loss_arr), len(loss_arr))
-    plt.plot(x, loss_arr, '-o', label='Train loss')
+    x = np.linspace(1, len(loss_arr), len(loss_arr)//2, dtype=int)
+    plt.plot(loss_arr, '-o', label='Train loss')
     plt.xticks(x)
     plt.xlabel('Iteration')
     plt.tight_layout()

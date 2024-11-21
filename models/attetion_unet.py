@@ -95,7 +95,9 @@ class Attention_block(nn.Module):
 class AttU_Net(nn.Module):
     def __init__(self, input_channel, output_channel, b_h_w, kernel_size=2, stride=2, padding='same'):
         super(AttU_Net, self).__init__()
-
+        self.batch = b_h_w[0]
+        self.height = b_h_w[1]
+        self.width = b_h_w[2]
         self.Maxpool = nn.MaxPool2d(kernel_size=2, stride=2)
 
         self.Conv1 = conv_block(ch_in=input_channel, ch_out=64)
@@ -122,9 +124,13 @@ class AttU_Net(nn.Module):
 
         self.Conv_1x1 = nn.Conv2d(64, output_channel, kernel_size=kernel_size, stride=stride, padding=padding)
 
-    def forward(self, x, m, layer_hiddens, encoder, decoder):
+    # def forward(self, x, m, layer_hiddens, encoder, decoder):
+    def forward(self, x):
         # encoding path
-        x = encoder(x)
+        # x = encoder(x)
+        x = torch.nn.functional.pad(x, (2, 3, 7, 8))
+        x = torch.reshape(x, (x.shape[0], x.shape[1] * x.shape[2], x.shape[3], x.shape[4]))
+
         x1 = self.Conv1(x)
 
         x2 = self.Maxpool(x1)
@@ -161,8 +167,10 @@ class AttU_Net(nn.Module):
         d2 = self.Up_conv2(d2)
 
         d1 = self.Conv_1x1(d2)
-
-        next_layer_hiddens = []
-        x = decoder(d1)
-        decouple_loss = torch.zeros([cfg.LSTM_layers, cfg.batch, cfg.lstm_hidden_state]).cuda()
-        return x, m, next_layer_hiddens, decouple_loss
+        output = torch.reshape(d1, (-1, cfg.out_len, cfg.features_amount, d1.shape[2], d1.shape[3]))
+        output = output[:, :, :, 7:self.height + 7, 2:self.width + 2]
+        return output
+        # next_layer_hiddens = []
+        # x = decoder(d1)
+        # decouple_loss = torch.zeros([cfg.LSTM_layers, cfg.batch, cfg.lstm_hidden_state]).cuda()
+        # return x, m, next_layer_hiddens, decouple_loss

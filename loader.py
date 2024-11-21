@@ -89,9 +89,9 @@ def count_offset(start_year):
 
 def create_torch_data(files_path_prefix, start_year, end_year, cfg):
     flux_array, SST_array, press_array = load_np_data(files_path_prefix, start_year, end_year)
-    flux_array_scaled, flux_quantiles = scale_to_bins(flux_array, bins=cfg.bins)
-    SST_array_scaled, SST_quantiles = scale_to_bins(SST_array, bins=cfg.bins)
-    press_array_scaled, press_quantiles = scale_to_bins(press_array, bins=cfg.bins)
+    # flux_array_scaled, flux_quantiles = scale_to_bins(flux_array, bins=cfg.bins)
+    # SST_array_scaled, SST_quantiles = scale_to_bins(SST_array, bins=cfg.bins)
+    # press_array_scaled, press_quantiles = scale_to_bins(press_array, bins=cfg.bins)
     if start_year == 2019:
         train_len = int(flux_array.shape[2] * 3 / 5)
         test_len = flux_array.shape[2] - train_len - cfg.in_len - cfg.out_len
@@ -102,7 +102,7 @@ def create_torch_data(files_path_prefix, start_year, end_year, cfg):
     # mask = load_mask(files_path_prefix)
     x_train = np.zeros((train_len, cfg.height, cfg.width, cfg.in_len, cfg.features_amount), dtype=float)
     y_train = np.zeros((train_len, cfg.height, cfg.width, cfg.out_len, cfg.features_amount), dtype=float)
-    labels_train = np.zeros((train_len, cfg.height, cfg.width, cfg.out_len, cfg.features_amount), dtype=int)
+    # labels_train = np.zeros((train_len, cfg.height, cfg.width, cfg.out_len, cfg.features_amount), dtype=int)
 
     # eigenvectors_flux_sst = np.zeros((cfg.height, cfg.width, cfg.in_len))
     # eigenvectors_sst_press = np.zeros((cfg.height, cfg.width, cfg.in_len))
@@ -117,17 +117,17 @@ def create_torch_data(files_path_prefix, start_year, end_year, cfg):
         # flux
         x_train[t, :, :, :, 0] = flux_array[:, :, t:t+cfg.in_len]
         y_train[t, :, :, :, 0] = flux_array[:, :, t + cfg.in_len:t + cfg.in_len + cfg.out_len]
-        labels_train[t, :, :, :, 0] = flux_array_scaled[:, :, t + cfg.in_len:t + cfg.in_len + cfg.out_len]
+        # labels_train[t, :, :, :, 0] = flux_array_scaled[:, :, t + cfg.in_len:t + cfg.in_len + cfg.out_len]
 
         # sst
         x_train[t, :, :, :, 1] = SST_array[:, :, t:t+cfg.in_len]
         y_train[t, :, :, :, 1] = SST_array[:, :, t + cfg.in_len:t + cfg.in_len + cfg.out_len]
-        labels_train[t, :, :, :, 1] = SST_array_scaled[:, :, t + cfg.in_len:t + cfg.in_len + cfg.out_len]
+        # labels_train[t, :, :, :, 1] = SST_array_scaled[:, :, t + cfg.in_len:t + cfg.in_len + cfg.out_len]
 
         # press
         x_train[t, :, :, :, 2] = press_array[:, :, t:t+cfg.in_len]
         y_train[t, :, :, :, 2] = press_array[:, :, t + cfg.in_len:t + cfg.in_len + cfg.out_len]
-        labels_train[t, :, :, :, 2] = press_array_scaled[:, :, t + cfg.in_len:t + cfg.in_len + cfg.out_len]
+        # labels_train[t, :, :, :, 2] = press_array_scaled[:, :, t + cfg.in_len:t + cfg.in_len + cfg.out_len]
 
         if cfg.features_amount == 6:
             for t_lag in range(cfg.in_len):
@@ -197,30 +197,30 @@ def create_torch_data(files_path_prefix, start_year, end_year, cfg):
     y_train = torch.from_numpy(y_train)
     torch.save(y_train, files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_y_train_{cfg.features_amount}.pt')
     del y_train
-    labels_train = torch.from_numpy(labels_train)
-    torch.save(labels_train, files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_labels_train_{cfg.features_amount}.pt')
-    del labels_train
+    # labels_train = torch.from_numpy(labels_train)
+    # torch.save(labels_train, files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_labels_train_{cfg.features_amount}.pt')
+    # del labels_train
 
     print('Preparing test', flush=True)
     x_test = np.zeros((test_len, cfg.height, cfg.width, cfg.in_len, cfg.features_amount), dtype=float)
     y_test = np.zeros((test_len, cfg.height, cfg.width, cfg.out_len, cfg.features_amount), dtype=float)
-    labels_test = np.zeros((test_len, cfg.height, cfg.width, cfg.out_len, cfg.features_amount), dtype=int)
+    # labels_test = np.zeros((test_len, cfg.height, cfg.width, cfg.out_len, cfg.features_amount), dtype=int)
     for t in range(test_len):
         t_absolute = train_len + t
         # flux
         x_test[t, :, :, :, 0] = flux_array[:, :, t_absolute:t_absolute+cfg.in_len]
         y_test[t, :, :, :, 0] = flux_array[:, :, t_absolute + cfg.in_len:t_absolute + cfg.in_len + cfg.out_len]
-        labels_test[t, :, :, :, 0] = flux_array_scaled[:, :, t_absolute + cfg.in_len:t_absolute + cfg.in_len + cfg.out_len]
+        # labels_test[t, :, :, :, 0] = flux_array_scaled[:, :, t_absolute + cfg.in_len:t_absolute + cfg.in_len + cfg.out_len]
 
         # sst
         x_test[t, :, :, :, 1] = SST_array[:, :, t_absolute:t_absolute+cfg.in_len]
         y_test[t, :, :, :, 1] = SST_array[:, :, t_absolute + cfg.in_len:t_absolute + cfg.in_len + cfg.out_len]
-        labels_test[t, :, :, :, 1] = SST_array_scaled[:, :, t_absolute + cfg.in_len:t_absolute + cfg.in_len + cfg.out_len]
+        # labels_test[t, :, :, :, 1] = SST_array_scaled[:, :, t_absolute + cfg.in_len:t_absolute + cfg.in_len + cfg.out_len]
 
         # press
         x_test[t, :, :, :, 2] = press_array[:, :, t_absolute:t_absolute+cfg.in_len]
         y_test[t, :, :, :, 2] = press_array[:, :, t_absolute + cfg.in_len:t_absolute + cfg.in_len + cfg.out_len]
-        labels_test[t, :, :, :, 2] = press_array_scaled[:, :, t_absolute + cfg.in_len:t_absolute + cfg.in_len + cfg.out_len]
+        # labels_test[t, :, :, :, 2] = press_array_scaled[:, :, t_absolute + cfg.in_len:t_absolute + cfg.in_len + cfg.out_len]
 
         if cfg.features_amount == 6:
             for t_lag in range(cfg.in_len):
@@ -295,41 +295,40 @@ def create_torch_data(files_path_prefix, start_year, end_year, cfg):
     y_test = torch.from_numpy(y_test)
     torch.save(y_test, files_path_prefix + f'Forecast/Test/{start_year}-{end_year}_y_test_{cfg.features_amount}.pt')
     del y_test
-    labels_test = torch.from_numpy(labels_test)
-    torch.save(labels_test, files_path_prefix + f'Forecast/Test/{start_year}-{end_year}_labels_test_{cfg.features_amount}.pt')
-    del labels_test
+    # labels_test = torch.from_numpy(labels_test)
+    # torch.save(labels_test, files_path_prefix + f'Forecast/Test/{start_year}-{end_year}_labels_test_{cfg.features_amount}.pt')
+    # del labels_test
     return
 
 
 def create_dataloaders(files_path_prefix, start_year, end_year, cfg):
-    if not os.path.exists(files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_x_train_{cfg.features_amount}{cfg.postfix_short}.pt'):
+    if not os.path.exists(files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_y_train_{cfg.features_amount}{cfg.postfix_short}.pt'):
         create_torch_data(files_path_prefix, start_year, end_year, cfg)
     x_train = torch.load(files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_x_train_{cfg.features_amount}{cfg.postfix_short}.pt')
     y_train = torch.load(files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_y_train_{cfg.features_amount}{cfg.postfix_short}.pt')
-    labels_train = torch.load(files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_labels_train_{cfg.features_amount}{cfg.postfix_short}.pt')
+    # labels_train = torch.load(files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_labels_train_{cfg.features_amount}{cfg.postfix_short}.pt')
     # print(x_train.shape)
     #print(y_train.shape)
     x_test = torch.load(files_path_prefix + f'Forecast/Test/{start_year}-{end_year}_x_test_{cfg.features_amount}{cfg.postfix_short}.pt')
     y_test = torch.load(files_path_prefix + f'Forecast/Test/{start_year}-{end_year}_y_test_{cfg.features_amount}{cfg.postfix_short}.pt')
-    labels_test = torch.load(files_path_prefix + f'Forecast/Test/{start_year}-{end_year}_labels_test_{cfg.features_amount}{cfg.postfix_short}.pt')
+    # labels_test = torch.load(files_path_prefix + f'Forecast/Test/{start_year}-{end_year}_labels_test_{cfg.features_amount}{cfg.postfix_short}.pt')
 
     cfg.min_vals = tuple(torch.amin(y_train, dim=(0, 1, 2, 3)))
     cfg.max_vals = tuple(torch.amax(y_train, dim=(0, 1, 2, 3)))
-    if 'Transformer' in cfg.model_name:
-        train_dataset = Data(x_train, labels_train)
-        test_dataset = Data(x_test, labels_test)
-    else:
-        train_dataset = Data(x_train, y_train)
-        test_dataset = Data(x_test, y_test)
+
+    train_dataset = Data(x_train, y_train)
+    test_dataset = Data(x_test, y_test)
 
     return train_dataset, test_dataset, test_dataset
 
 
 def create_dataloader_encoder_decoder(files_path_prefix, start_year, end_year, cfg):
-    if not os.path.exists(files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_labels_train_{cfg.features_amount}{cfg.postfix_short}.pt'):
+    if not os.path.exists(files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_x_train_{cfg.features_amount}{cfg.postfix_short}.pt'):
         create_torch_data(files_path_prefix, start_year, end_year, cfg)
     x_train = torch.load(files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_x_train_{cfg.features_amount}{cfg.postfix_short}.pt')
     # print(x_train.shape)
+    cfg.min_vals = tuple(torch.amin(x_train, dim=(0, 1, 2, 3)))
+    cfg.max_vals = tuple(torch.amax(x_train, dim=(0, 1, 2, 3)))
     train_dataset = Data(x_train, x_train)
     return train_dataset
 

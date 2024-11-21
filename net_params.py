@@ -84,7 +84,7 @@ elif cfg.model_name == 'Att-Unet':
 # else:
 #     rnn = None
 
-if cfg.model_name != 'Encoder-Decoder':
+if not cfg.model_name in ['Encoder-Decoder', 'Transformer', 'Attention U-net']:
     rnn = rnn(input_channel=hs, output_channel=hs, b_h_w=(b, 96, 96), kernel_size=k, stride=s, padding=p)
     # nets = [OrderedDict({'conv_embed': [cfg.features_amount*cfg.in_len, hs, 1, 1, 0, 1]}),
     #         rnn,

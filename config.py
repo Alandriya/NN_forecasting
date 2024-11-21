@@ -1,7 +1,8 @@
 # files_path_prefix = '/home/aosipova/EM_ocean/'
-# SHORT_POSTFIX = ''
-files_path_prefix = 'E:/Nastya/Data/OceanFull/'
-SHORT_POSTFIX = '_short'
+SHORT_POSTFIX = ''
+files_path_prefix = 'D:/Data/OceanFull/'
+# files_path_prefix = 'E:/Nastya/Data/OceanFull/'
+# SHORT_POSTFIX = '_short'
 # files_path_prefix = 'D:/Programming/PythonProjects/Alana/Data/'
 # SHORT_POSTFIX = '_short'
 
@@ -46,10 +47,11 @@ class OrderedEasyDict(OrderedDict):
 
 cfg = OrderedEasyDict()
 
-cfg.start_year = 1979
+cfg.start_year = 2009
 cfg.features_amount = 6
 # ConvLSTM  MS-LSTM  Att-Unet
-cfg.model_name = 'Encoder-Decoder'
+# cfg.model_name = 'Transformer'
+cfg.model_name = 'Attention U-net'
 cfg.enc_dec_mode = 'train'
 # cfg.enc_dec_mode = 'encode'
 
@@ -71,8 +73,8 @@ cfg.CONV_conv = Conv2d
 
 cfg.width = 91
 cfg.height = 81
-cfg.in_len = 10
-cfg.out_len = 10
+cfg.in_len = 7
+cfg.out_len = 5
 cfg.epoch = 20
 cfg.min_vals = (0, 0, 0)
 cfg.max_vals = (1, 1, 1)
