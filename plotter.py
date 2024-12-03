@@ -84,32 +84,38 @@ def plot_predictions(files_path_prefix: str,
     # axs[1].set_title('Predicted values', fontsize=20)
     # axs[2].set_title('Absolute difference', fontsize=20)
 
-    flux_min = min(np.nanmin(Y_test[:, 0]), np.nanmin(Y_predict[:, 0]))
-    flux_max = max(np.nanmax(Y_test[:, 0]), np.nanmax(Y_predict[:, 0]))
+    # max_vals = cfg.max_vals
+    # min_vals = cfg.min_vals
 
-    sst_min = min(np.nanmin(Y_test[:, 1]), np.nanmin(Y_predict[:, 1]))
-    sst_max = max(np.nanmax(Y_test[:, 1]), np.nanmax(Y_predict[:, 1]))
-
-    press_min = min(np.nanmin(Y_test[:, 2]), np.nanmin(Y_predict[:, 2]))
-    press_max = max(np.nanmax(Y_test[:, 2]), np.nanmax(Y_predict[:, 2]))
+    flux_min, sst_min, press_min = 0, 0, 0
+    flux_max, sst_max, press_max = 1.5, 4, 4
+    # flux_min = min(np.nanmin(Y_test[:, 0]), np.nanmin(Y_predict[:, 0])) / 2
+    # flux_max = max(np.nanmax(Y_test[:, 0]), np.nanmax(Y_predict[:, 0])) * 2
+    #
+    # sst_min = min(np.nanmin(Y_test[:, 1]), np.nanmin(Y_predict[:, 1])) / 2
+    # sst_max = max(np.nanmax(Y_test[:, 1]), np.nanmax(Y_predict[:, 1])) * 2
+    #
+    # press_min = min(np.nanmin(Y_test[:, 2]), np.nanmin(Y_predict[:, 2])) / 2
+    # press_max = max(np.nanmax(Y_test[:, 2]), np.nanmax(Y_predict[:, 2])) * 2
 
     # cmap_flux = get_continuous_cmap(['#000080', '#ffffff', '#ff0000'],
     #                                 [0, (1.0 - flux_min) / (flux_max - flux_min), 1])
-    # cmap_sst = get_continuous_cmap(['#000080', '#ffffff', '#ff0000'],
-    #                                 [0, (1.0 - sst_min) / (sst_max - sst_min), 1])
-    cmap_flux = get_continuous_cmap(['#ffffff', '#ff0000'], [0, 1])
+    # cmap_flux = get_continuous_cmap(['#ffffff', '#ff0000'], [0, 1])
+    cmap_flux = plt.get_cmap('Blues').copy()
     cmap_flux.set_bad('lightgreen', 1.0)
     # cmap_sst = get_continuous_cmap(['#ffffff', '#ff0000'], [0, 1])
-    # cmap_sst = plt.get_cmap('Oranges').copy()
+    cmap_sst = plt.get_cmap('Oranges').copy()
+    # cmap_sst = plt.get_cmap('Blues').copy()
     # cmap_sst = get_continuous_cmap(['#000080', '#ffffff', '#ff0000'],
     #                                 [0, (1.0 - sst_min) / (sst_max - sst_min), 1])
-    cmap_sst = get_continuous_cmap(['#ffffff', '#ff0000'], [0, 1])
+    # cmap_sst = get_continuous_cmap(['#ffffff', '#ff0000'], [0, 1])
     cmap_sst.set_bad('lightgreen', 1.0)
     # cmap_press = get_continuous_cmap(['#ffffff', '#ff0000'], [0, 1])
-    # cmap_press = plt.get_cmap('Purples').copy()
+    cmap_press = plt.get_cmap('Purples').copy()
+    # cmap_press = plt.get_cmap('Blues').copy()
     # cmap_press = get_continuous_cmap(['#000080', '#ffffff', '#ff0000'],
     #                                 [0, (1.0 - press_min) / (press_max - press_min), 1])
-    cmap_press = get_continuous_cmap(['#ffffff', '#ff0000'], [0, 1])
+    # cmap_press = get_continuous_cmap(['#ffffff', '#ff0000'], [0, 1])
     cmap_press.set_bad('lightgreen', 1.0)
 
     cmap_diff = plt.get_cmap('Reds').copy()
@@ -178,11 +184,11 @@ def plot_predictions(files_path_prefix: str,
                 fig.colorbar(img[i][t], cax=cax[i][t], orientation='vertical')
 
         if k == 0:
-            fig.suptitle(f'{model_name}, Flux', fontsize=30)
+            fig.suptitle(f'{model_name}, normalized Flux', fontsize=30)
         elif k == 1:
-            fig.suptitle(f'{model_name}, SST', fontsize=30)
+            fig.suptitle(f'{model_name}, normalized SST', fontsize=30)
         else:
-            fig.suptitle(f'{model_name}, Pressure', fontsize=30)
+            fig.suptitle(f'{model_name}, normalized Pressure', fontsize=30)
         plt.tight_layout()
         if k == 0:
             fig.savefig(files_path_prefix + f'videos/Forecast/{model_name}/{model_name}_{features_amount}_Flux_{day_str}.png')

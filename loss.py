@@ -39,3 +39,33 @@ class Loss2(nn.Module):
         mae = torch.mean(mae)  # 1
         loss = mse + mae
         return loss
+
+
+class Loss_MAE(nn.Module):
+    def __init__(self):
+        super().__init__()
+        pass
+
+    def forward(self, truth, pred):
+        # print(truth.shape)
+        # print(pred.shape)
+        differ = truth - pred  # b s c h w
+        # print(differ)
+        mae = torch.sum(torch.abs(differ), (2, 3, 4))  # b s
+        mae = torch.mean(mae)  # 1
+        return mae
+
+
+class Loss_MSE(nn.Module):
+    def __init__(self):
+        super().__init__()
+        pass
+
+    def forward(self, truth, pred):
+        # print(truth.shape)
+        # print(pred.shape)
+        differ = truth - pred  # b s c h w
+        # print(differ)
+        mse = torch.sum(differ ** 2, (2, 3, 4))  # b s
+        mse = torch.mean(mse)  # 1
+        return mse

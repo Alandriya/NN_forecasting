@@ -1,8 +1,7 @@
 # files_path_prefix = '/home/aosipova/EM_ocean/'
-SHORT_POSTFIX = ''
-files_path_prefix = 'D:/Data/OceanFull/'
-# files_path_prefix = 'E:/Nastya/Data/OceanFull/'
-# SHORT_POSTFIX = '_short'
+# SHORT_POSTFIX = ''
+files_path_prefix = 'D:/Nastya/Data/OceanFull/'
+SHORT_POSTFIX = '_short'
 # files_path_prefix = 'D:/Programming/PythonProjects/Alana/Data/'
 # SHORT_POSTFIX = '_short'
 
@@ -48,14 +47,13 @@ class OrderedEasyDict(OrderedDict):
 cfg = OrderedEasyDict()
 
 cfg.start_year = 2009
-cfg.features_amount = 6
+cfg.features_amount = 3
 # ConvLSTM  MS-LSTM  Att-Unet
 # cfg.model_name = 'Transformer'
 cfg.model_name = 'Attention U-net'
-cfg.enc_dec_mode = 'train'
-# cfg.enc_dec_mode = 'encode'
+cfg.nn_mode = 'test'
 
-cfg.bins = 500
+cfg.bins = 100
 cfg.LOAD_MODEL = True
 cfg.DELETE_OLD_MODEL = False
 cfg.postfix_short = SHORT_POSTFIX
@@ -75,9 +73,11 @@ cfg.width = 91
 cfg.height = 81
 cfg.in_len = 7
 cfg.out_len = 5
-cfg.epoch = 20
+cfg.epoch = 50
 cfg.min_vals = (0, 0, 0)
 cfg.max_vals = (1, 1, 1)
+# cfg.min_vals = (0, 0, 0)
+# cfg.max_vals = (cfg.bins, cfg.bins, cfg.bins)
 
 cfg.early_stopping = False
 cfg.early_stopping_patience = 3

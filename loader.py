@@ -1,6 +1,6 @@
 from torch.utils.data import Dataset
 import os
-import cv2
+# import cv2
 import sys
 sys.path.append("..")
 from config import cfg
@@ -14,12 +14,12 @@ from torch.utils.data import TensorDataset, DataLoader
 def scale_to_bins(arr, bins=100):
     quantiles = list(np.nanquantile(arr, np.linspace(0, 1, bins, endpoint=False)))
 
-    arr_scaled = np.zeros_like(arr)
-    arr_scaled[np.isnan(arr)] = np.nan
+    arr_scaled = np.zeros_like(arr, dtype=float)
+    # arr_scaled[np.isnan(arr)] = 0
     # for j in tqdm.tqdm(range(bins - 1)):
     for j in range(bins - 1):
         arr_scaled[np.where((np.logical_not(np.isnan(arr))) & (quantiles[j] <= arr) & (arr < quantiles[j + 1]))] = \
-            j
+            (j + 1) / bins
             # (quantiles[j] + quantiles[j + 1]) / 2
 
     quantiles += [np.nanmax(arr)]
@@ -29,13 +29,13 @@ def scale_to_bins(arr, bins=100):
 def load_np_data(files_path_prefix, start_year, end_year):
     # load data
     flux_array = np.load(files_path_prefix + f'Fluxes/FLUX_{start_year}-{end_year}_grouped.npy')
-    flux_array = np.diff(flux_array, axis=1)
+    # flux_array = np.diff(flux_array, axis=1)
 
     SST_array = np.load(files_path_prefix + f'SST/SST_{start_year}-{end_year}_grouped.npy')
-    SST_array = np.diff(SST_array, axis=1)
+    # SST_array = np.diff(SST_array, axis=1)
 
     press_array = np.load(files_path_prefix + f'Pressure/PRESS_{start_year}-{end_year}_grouped.npy')
-    press_array = np.diff(press_array, axis=1)
+    # press_array = np.diff(press_array, axis=1)
 
     flux_array = flux_array.reshape((161, 181, -1))
     flux_array = flux_array[::2, ::2, :]
@@ -89,9 +89,9 @@ def count_offset(start_year):
 
 def create_torch_data(files_path_prefix, start_year, end_year, cfg):
     flux_array, SST_array, press_array = load_np_data(files_path_prefix, start_year, end_year)
-    # flux_array_scaled, flux_quantiles = scale_to_bins(flux_array, bins=cfg.bins)
-    # SST_array_scaled, SST_quantiles = scale_to_bins(SST_array, bins=cfg.bins)
-    # press_array_scaled, press_quantiles = scale_to_bins(press_array, bins=cfg.bins)
+    flux_array_scaled, flux_quantiles = scale_to_bins(flux_array, bins=cfg.bins)
+    SST_array_scaled, SST_quantiles = scale_to_bins(SST_array, bins=cfg.bins)
+    press_array_scaled, press_quantiles = scale_to_bins(press_array, bins=cfg.bins)
     if start_year == 2019:
         train_len = int(flux_array.shape[2] * 3 / 5)
         test_len = flux_array.shape[2] - train_len - cfg.in_len - cfg.out_len
@@ -100,9 +100,12 @@ def create_torch_data(files_path_prefix, start_year, end_year, cfg):
         test_len = 10
     _,  offset = count_offset(start_year)
     # mask = load_mask(files_path_prefix)
+    if cfg.postfix_short == '_short':
+        train_len = 100
+        test_len = 10
     x_train = np.zeros((train_len, cfg.height, cfg.width, cfg.in_len, cfg.features_amount), dtype=float)
     y_train = np.zeros((train_len, cfg.height, cfg.width, cfg.out_len, cfg.features_amount), dtype=float)
-    # labels_train = np.zeros((train_len, cfg.height, cfg.width, cfg.out_len, cfg.features_amount), dtype=int)
+    labels_train = np.zeros((train_len, cfg.height, cfg.width, cfg.out_len, cfg.features_amount), dtype=float)
 
     # eigenvectors_flux_sst = np.zeros((cfg.height, cfg.width, cfg.in_len))
     # eigenvectors_sst_press = np.zeros((cfg.height, cfg.width, cfg.in_len))
@@ -117,17 +120,17 @@ def create_torch_data(files_path_prefix, start_year, end_year, cfg):
         # flux
         x_train[t, :, :, :, 0] = flux_array[:, :, t:t+cfg.in_len]
         y_train[t, :, :, :, 0] = flux_array[:, :, t + cfg.in_len:t + cfg.in_len + cfg.out_len]
-        # labels_train[t, :, :, :, 0] = flux_array_scaled[:, :, t + cfg.in_len:t + cfg.in_len + cfg.out_len]
+        labels_train[t, :, :, :, 0] = flux_array_scaled[:, :, t + cfg.in_len:t + cfg.in_len + cfg.out_len]
 
         # sst
         x_train[t, :, :, :, 1] = SST_array[:, :, t:t+cfg.in_len]
         y_train[t, :, :, :, 1] = SST_array[:, :, t + cfg.in_len:t + cfg.in_len + cfg.out_len]
-        # labels_train[t, :, :, :, 1] = SST_array_scaled[:, :, t + cfg.in_len:t + cfg.in_len + cfg.out_len]
+        labels_train[t, :, :, :, 1] = SST_array_scaled[:, :, t + cfg.in_len:t + cfg.in_len + cfg.out_len]
 
         # press
         x_train[t, :, :, :, 2] = press_array[:, :, t:t+cfg.in_len]
         y_train[t, :, :, :, 2] = press_array[:, :, t + cfg.in_len:t + cfg.in_len + cfg.out_len]
-        # labels_train[t, :, :, :, 2] = press_array_scaled[:, :, t + cfg.in_len:t + cfg.in_len + cfg.out_len]
+        labels_train[t, :, :, :, 2] = press_array_scaled[:, :, t + cfg.in_len:t + cfg.in_len + cfg.out_len]
 
         if cfg.features_amount == 6:
             for t_lag in range(cfg.in_len):
@@ -192,35 +195,35 @@ def create_torch_data(files_path_prefix, start_year, end_year, cfg):
     np.nan_to_num(x_train, copy=False)
     np.nan_to_num(y_train, copy=False)
     x_train = torch.from_numpy(x_train)
-    torch.save(x_train, files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_x_train_{cfg.features_amount}.pt')
+    torch.save(x_train, files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_x_train_{cfg.features_amount}{cfg.postfix_short}.pt')
     del x_train
     y_train = torch.from_numpy(y_train)
-    torch.save(y_train, files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_y_train_{cfg.features_amount}.pt')
+    torch.save(y_train, files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_y_train_{cfg.features_amount}{cfg.postfix_short}.pt')
     del y_train
-    # labels_train = torch.from_numpy(labels_train)
-    # torch.save(labels_train, files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_labels_train_{cfg.features_amount}.pt')
-    # del labels_train
+    labels_train = torch.from_numpy(labels_train)
+    torch.save(labels_train, files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_labels_train_{cfg.features_amount}{cfg.postfix_short}.pt')
+    del labels_train
 
     print('Preparing test', flush=True)
     x_test = np.zeros((test_len, cfg.height, cfg.width, cfg.in_len, cfg.features_amount), dtype=float)
     y_test = np.zeros((test_len, cfg.height, cfg.width, cfg.out_len, cfg.features_amount), dtype=float)
-    # labels_test = np.zeros((test_len, cfg.height, cfg.width, cfg.out_len, cfg.features_amount), dtype=int)
+    labels_test = np.zeros((test_len, cfg.height, cfg.width, cfg.out_len, cfg.features_amount), dtype=float)
     for t in range(test_len):
         t_absolute = train_len + t
         # flux
         x_test[t, :, :, :, 0] = flux_array[:, :, t_absolute:t_absolute+cfg.in_len]
         y_test[t, :, :, :, 0] = flux_array[:, :, t_absolute + cfg.in_len:t_absolute + cfg.in_len + cfg.out_len]
-        # labels_test[t, :, :, :, 0] = flux_array_scaled[:, :, t_absolute + cfg.in_len:t_absolute + cfg.in_len + cfg.out_len]
+        labels_test[t, :, :, :, 0] = flux_array_scaled[:, :, t_absolute + cfg.in_len:t_absolute + cfg.in_len + cfg.out_len]
 
         # sst
         x_test[t, :, :, :, 1] = SST_array[:, :, t_absolute:t_absolute+cfg.in_len]
         y_test[t, :, :, :, 1] = SST_array[:, :, t_absolute + cfg.in_len:t_absolute + cfg.in_len + cfg.out_len]
-        # labels_test[t, :, :, :, 1] = SST_array_scaled[:, :, t_absolute + cfg.in_len:t_absolute + cfg.in_len + cfg.out_len]
+        labels_test[t, :, :, :, 1] = SST_array_scaled[:, :, t_absolute + cfg.in_len:t_absolute + cfg.in_len + cfg.out_len]
 
         # press
         x_test[t, :, :, :, 2] = press_array[:, :, t_absolute:t_absolute+cfg.in_len]
         y_test[t, :, :, :, 2] = press_array[:, :, t_absolute + cfg.in_len:t_absolute + cfg.in_len + cfg.out_len]
-        # labels_test[t, :, :, :, 2] = press_array_scaled[:, :, t_absolute + cfg.in_len:t_absolute + cfg.in_len + cfg.out_len]
+        labels_test[t, :, :, :, 2] = press_array_scaled[:, :, t_absolute + cfg.in_len:t_absolute + cfg.in_len + cfg.out_len]
 
         if cfg.features_amount == 6:
             for t_lag in range(cfg.in_len):
@@ -290,14 +293,14 @@ def create_torch_data(files_path_prefix, start_year, end_year, cfg):
     np.nan_to_num(x_test, copy=False)
     np.nan_to_num(y_test, copy=False)
     x_test = torch.from_numpy(x_test)
-    torch.save(x_test, files_path_prefix + f'Forecast/Test/{start_year}-{end_year}_x_test_{cfg.features_amount}.pt')
+    torch.save(x_test, files_path_prefix + f'Forecast/Test/{start_year}-{end_year}_x_test_{cfg.features_amount}{cfg.postfix_short}.pt')
     del x_test
     y_test = torch.from_numpy(y_test)
-    torch.save(y_test, files_path_prefix + f'Forecast/Test/{start_year}-{end_year}_y_test_{cfg.features_amount}.pt')
+    torch.save(y_test, files_path_prefix + f'Forecast/Test/{start_year}-{end_year}_y_test_{cfg.features_amount}{cfg.postfix_short}.pt')
     del y_test
-    # labels_test = torch.from_numpy(labels_test)
-    # torch.save(labels_test, files_path_prefix + f'Forecast/Test/{start_year}-{end_year}_labels_test_{cfg.features_amount}.pt')
-    # del labels_test
+    labels_test = torch.from_numpy(labels_test)
+    torch.save(labels_test, files_path_prefix + f'Forecast/Test/{start_year}-{end_year}_labels_test_{cfg.features_amount}{cfg.postfix_short}.pt')
+    del labels_test
     return
 
 
@@ -306,18 +309,20 @@ def create_dataloaders(files_path_prefix, start_year, end_year, cfg):
         create_torch_data(files_path_prefix, start_year, end_year, cfg)
     x_train = torch.load(files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_x_train_{cfg.features_amount}{cfg.postfix_short}.pt')
     y_train = torch.load(files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_y_train_{cfg.features_amount}{cfg.postfix_short}.pt')
-    # labels_train = torch.load(files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_labels_train_{cfg.features_amount}{cfg.postfix_short}.pt')
+    labels_train = torch.load(files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_labels_train_{cfg.features_amount}{cfg.postfix_short}.pt')
     # print(x_train.shape)
     #print(y_train.shape)
     x_test = torch.load(files_path_prefix + f'Forecast/Test/{start_year}-{end_year}_x_test_{cfg.features_amount}{cfg.postfix_short}.pt')
     y_test = torch.load(files_path_prefix + f'Forecast/Test/{start_year}-{end_year}_y_test_{cfg.features_amount}{cfg.postfix_short}.pt')
-    # labels_test = torch.load(files_path_prefix + f'Forecast/Test/{start_year}-{end_year}_labels_test_{cfg.features_amount}{cfg.postfix_short}.pt')
+    labels_test = torch.load(files_path_prefix + f'Forecast/Test/{start_year}-{end_year}_labels_test_{cfg.features_amount}{cfg.postfix_short}.pt')
 
-    cfg.min_vals = tuple(torch.amin(y_train, dim=(0, 1, 2, 3)))
-    cfg.max_vals = tuple(torch.amax(y_train, dim=(0, 1, 2, 3)))
+    cfg.min_vals = tuple(torch.amin(x_train, dim=(0, 1, 2, 3)))
+    cfg.max_vals = tuple(torch.amax(x_train, dim=(0, 1, 2, 3)))
 
-    train_dataset = Data(x_train, y_train)
-    test_dataset = Data(x_test, y_test)
+    # train_dataset = Data(x_train, y_train)
+    # test_dataset = Data(x_test, y_test)
+    train_dataset = Data_Labelled(x_train, y_train, labels_train)
+    test_dataset = Data_Labelled(x_test, y_test, labels_test)
 
     return train_dataset, test_dataset, test_dataset
 
@@ -337,6 +342,19 @@ class Data(Dataset):
     def __init__(self, x, y):
         super().__init__()
         self.data = torch.cat((x, y), dim=3).permute((3, 0, 4, 1, 2)).float()
+
+    def __getitem__(self, index):
+        sample = self.data[:, index, :, :, :]
+        return sample  # S*C*H*W
+
+    def __len__(self):
+        return self.data.shape[1]
+
+
+class Data_Labelled(Dataset):
+    def __init__(self, x, y, labels):
+        super().__init__()
+        self.data = torch.cat((x, y, labels), dim=3).permute((3, 0, 4, 1, 2)).float()
 
     def __getitem__(self, index):
         sample = self.data[:, index, :, :, :]
