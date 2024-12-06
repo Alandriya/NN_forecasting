@@ -152,44 +152,79 @@ if __name__ == '__main__':
         test_sampler = DistributedSampler(test_data, shuffle=False)
         test_loader = DataLoader(test_data, num_workers=threads, batch_size=cfg.batch, shuffle=False, pin_memory=True,
                                   sampler=test_sampler)
-        with (torch.no_grad()):
-            for idx, test_batch in enumerate(test_loader):
-                test_batch = normalize_data_cuda(test_batch, cfg.min_vals, cfg.max_vals)
-                # print(tuple(torch.amin(test_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, :3], dim=(0, 1, 3, 4))))
-                # print(tuple(torch.amax(test_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, :3], dim=(0, 1, 3, 4))))
-                if cfg.model_name == 'Attention U-net labels':
-                    test_pred = model(test_batch[:, :cfg.in_len])
-                    loss_labels = criterion(test_batch[:, cfg.in_len + cfg.out_len:, :3], test_pred[:, :, :3])
-                    test_pred_labels = test_pred * cfg.bins
-                    test_pred_labels = test_pred_labels.int()
-                    test_pred_values = torch.zeros_like(test_pred)
-                    for k in range(3):
-                        for q in range(cfg.bins):
-                            test_pred_values[:, :, k][test_pred_labels[:, :, k] == q+1] = (quantiles[k][q] + quantiles[k][q+1])/2
+        if is_master_proc():
+            with ((torch.no_grad())):
+                for idx, test_batch in enumerate(test_loader):
+                    test_batch = normalize_data_cuda(test_batch, cfg.min_vals, cfg.max_vals)
+
+                    if cfg.model_name == 'Attention U-net labels':
+                        test_pred = model(test_batch[:, :cfg.in_len])
+                        loss_labels = criterion(test_batch[:, cfg.in_len + cfg.out_len:, :3], test_pred[:, :, :3])
+                        test_pred_labels = test_pred * cfg.bins
+                        test_pred_labels = test_pred_labels.int()
+                        test_pred_values = torch.zeros_like(test_pred)
+                        for channel in range(3):
+                            for q in range(cfg.bins):
+                                test_pred_values[:, :, channel][test_pred_labels[:, :, channel] == q+1] = (quantiles[channel][q] + quantiles[channel][q+1])/2
+
+                        for channel in range(3):
+                            test_pred_values[:, :, channel] = (test_pred_values[:, :, channel] - cfg.min_vals[channel]) / (cfg.max_vals[channel] - cfg.min_vals[channel])
+
+                    else:
+                        test_pred_values = model(test_batch[:, :cfg.in_len])
+                        loss = criterion(test_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, :3], test_pred_values[:, :, :3])
+
+                    test_batch_scaled = test_batch.clone().detach()
+
+                    truth = test_batch_scaled[:, cfg.in_len:cfg.in_len + cfg.out_len].detach().clone()
+                    prediction = test_pred_values.detach().clone()
+                    truth = truth.cpu().numpy()
+                    prediction = prediction.cpu().numpy()
+                    ssim = get_SSIM(prediction, truth)
+                    # print(ssim.shape)
+                    # print(ssim)
+                    print(np.mean(ssim, axis=(0, 1)))
+                    print(np.mean(ssim))
+
 
                     for channel in range(3):
-                        test_pred_values[:, :, channel] = (test_pred_values[:, :, channel] - cfg.min_vals[channel]) / (cfg.max_vals[channel] - cfg.min_vals[channel])
-                else:
-                    test_pred_values = model(test_batch[:, :cfg.in_len])
-                    loss = criterion(test_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, :3], test_pred_values[:, :, :3])
+                        test_batch_scaled[:, :cfg.in_len + cfg.out_len, channel] = \
+                            test_batch_scaled[:, :cfg.in_len + cfg.out_len, channel] * (cfg.max_vals[channel] - cfg.min_vals[channel]) + cfg.min_vals[channel]
+
+                        test_pred_values[:, :, channel] = test_pred_values[:, :, channel] * (cfg.max_vals[channel] - cfg.min_vals[channel]) + cfg.min_vals[channel]
+
+                    # print(cfg.min_vals)
+                    # print(cfg.max_vals)
+                    # print(tuple(torch.amin(test_batch_scaled[:, cfg.in_len:cfg.in_len + cfg.out_len, :3], dim=(0, 1, 3, 4))))
+                    # print(tuple(torch.amax(test_batch_scaled[:, cfg.in_len:cfg.in_len + cfg.out_len, :3], dim=(0, 1, 3, 4))))
+                    # print(tuple(torch.amin(test_pred_values[:, :, :3], dim=(0, 1, 3, 4))))
+                    # print(tuple(torch.amax(test_pred_values[:, :, :3], dim=(0, 1, 3, 4))))
+
+                    loss_values = criterion(test_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, :3],
+                                            test_pred_values[:, :, :3])
 
 
-                # print(tuple(torch.amin(test_pred_values[:, :, :3], dim=(0, 1, 3, 4))))
-                # print(tuple(torch.amax(test_pred_values[:, :, :3], dim=(0, 1, 3, 4))))
+                    differ = test_batch_scaled[:, cfg.in_len:cfg.in_len + cfg.out_len] - test_pred_values
+                    loss_divided = torch.mean(torch.sum(differ ** 2, (3, 4)), (0, 1))
 
-                loss_values = criterion(test_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, :3],
-                                        test_pred_values[:, :, :3])
 
-                if is_master_proc():
+                    # raise ValueError
+
                     if cfg.model_name == 'Attention U-net labels':
                         print(f'Idx {idx}, labels loss: {loss_labels}', flush=True)
+                    print(loss_divided)
                     print(f'Idx {idx}, values loss: {loss_values}', flush=True)
                     for i in range(cfg.batch):
                         day = datetime.datetime(1979, 1, 1) + datetime.timedelta(days=offset + idx + i)
-                        test_batch_numpy = test_batch[i, cfg.in_len:cfg.in_len+cfg.out_len, :3].cpu().numpy()
+                        test_batch_numpy = test_batch_scaled[i, :, :3].cpu().numpy()
                         test_pred_numpy = test_pred_values[i, :, :3].cpu().numpy()
+                        test_pred_labels_numpy = test_pred_labels[i, :, :3].cpu().numpy()
                         plot_predictions(cfg.root_path, test_batch_numpy,
                                          test_pred_numpy, cfg.model_name,
                                          cfg.features_amount, day, mask, cfg)
-                if idx >= 0:
-                    break
+
+                        plot_predictions(cfg.root_path, np.array(test_pred_labels_numpy, dtype=float),
+                                         np.array(test_pred_labels_numpy, dtype=float), cfg.model_name + ' labels',
+                                         cfg.features_amount, day, mask, cfg)
+                    if idx >= 0:
+                        break

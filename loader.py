@@ -93,11 +93,11 @@ def create_torch_data(files_path_prefix, start_year, end_year, cfg):
     SST_array_scaled, SST_quantiles = scale_to_bins(SST_array, bins=cfg.bins)
     press_array_scaled, press_quantiles = scale_to_bins(press_array, bins=cfg.bins)
     if start_year == 2019:
-        train_len = int(flux_array.shape[2] * 3 / 5)
+        train_len = int(flux_array.shape[2] * 4 / 5)
         test_len = flux_array.shape[2] - train_len - cfg.in_len - cfg.out_len
     else:
-        train_len = int(flux_array.shape[2]) - cfg.in_len - cfg.out_len - 11
-        test_len = 10
+        train_len = int(flux_array.shape[2]) - cfg.in_len - cfg.out_len - cfg.batch * 2
+        test_len = cfg.batch * 2
     _,  offset = count_offset(start_year)
     # mask = load_mask(files_path_prefix)
     if cfg.postfix_short == '_short':
