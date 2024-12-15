@@ -115,6 +115,10 @@ def create_torch_data(files_path_prefix, start_year, end_year, cfg):
     eigenvectors_sst_sst = np.zeros((cfg.height, cfg.width, cfg.in_len))
     eigenvectors_press_press = np.zeros((cfg.height, cfg.width, cfg.in_len))
 
+    a_flux = np.zeros((cfg.height, cfg.width, cfg.in_len))
+    a_sst = np.zeros((cfg.height, cfg.width, cfg.in_len))
+    a_press = np.zeros((cfg.height, cfg.width, cfg.in_len))
+
     print('Preparing train', flush=True)
     for t in range(train_len):
         # flux
@@ -132,7 +136,7 @@ def create_torch_data(files_path_prefix, start_year, end_year, cfg):
         y_train[t, :, :, :, 2] = press_array[:, :, t + cfg.in_len:t + cfg.in_len + cfg.out_len]
         labels_train[t, :, :, :, 2] = press_array_scaled[:, :, t + cfg.in_len:t + cfg.in_len + cfg.out_len]
 
-        if cfg.features_amount == 6:
+        if cfg.features_amount >= 6:
             for t_lag in range(cfg.in_len):
             #     # flux - sst
             #     try:
@@ -192,6 +196,35 @@ def create_torch_data(files_path_prefix, start_year, end_year, cfg):
             x_train[t, :, :, :, 4] = eigenvectors_sst_sst
             x_train[t, :, :, :, 5] = eigenvectors_press_press
 
+        if cfg.features_amount >= 9:
+            for t_lag in range(cfg.in_len):
+                # a flux
+                try:
+                    a_flux[:, :, t_lag] = np.load(files_path_prefix + f'Coeff_data_3d/flux-sst/{t + offset + t_lag}_A_sens.npy').reshape(
+                        (161, 181))[::2, ::2]
+                except FileNotFoundError:
+                    print(f'Not existing Coeff_data_3d/flux-sst/{t + offset + t_lag}_A_sens.npy')
+                    a_flux[:, :, t_lag] = np.zeros((cfg.height, cfg.width))
+
+                # a sst
+                try:
+                    a_sst[:, :, t_lag] = np.load(files_path_prefix + f'Coeff_data_3d/flux-sst/{t + offset + t_lag}_A_lat.npy').reshape(
+                        (161, 181))[::2, ::2]
+                except FileNotFoundError:
+                    print(f'Not existing Coeff_data_3d/flux-sst/{t + offset + t_lag}_A_lat.npy')
+                    a_sst[:, :, t_lag] = np.zeros((cfg.height, cfg.width))
+
+                # a press
+                try:
+                    a_press[:, :, t_lag] = np.load(files_path_prefix + f'Coeff_data_3d/flux-press/{t + offset + t_lag}_A_lat.npy').reshape(
+                        (161, 181))[::2, ::2]
+                except FileNotFoundError:
+                    print(f'Not existing Coeff_data_3d/flux-press/{t + offset + t_lag}_A_lat.npy')
+                    a_press[:, :, t_lag] = np.zeros((cfg.height, cfg.width))
+            x_train[t, :, :, :, 6] = a_flux
+            x_train[t, :, :, :, 7] = a_sst
+            x_train[t, :, :, :, 8] = a_press
+
     np.nan_to_num(x_train, copy=False)
     np.nan_to_num(y_train, copy=False)
     x_train = torch.from_numpy(x_train)
@@ -204,6 +237,7 @@ def create_torch_data(files_path_prefix, start_year, end_year, cfg):
     torch.save(labels_train, files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_labels_train_{cfg.features_amount}{cfg.postfix_short}.pt')
     del labels_train
 
+    # ---------------------------------------------------------------------------------------------------------------
     print('Preparing test', flush=True)
     x_test = np.zeros((test_len, cfg.height, cfg.width, cfg.in_len, cfg.features_amount), dtype=float)
     y_test = np.zeros((test_len, cfg.height, cfg.width, cfg.out_len, cfg.features_amount), dtype=float)
@@ -225,7 +259,7 @@ def create_torch_data(files_path_prefix, start_year, end_year, cfg):
         y_test[t, :, :, :, 2] = press_array[:, :, t_absolute + cfg.in_len:t_absolute + cfg.in_len + cfg.out_len]
         labels_test[t, :, :, :, 2] = press_array_scaled[:, :, t_absolute + cfg.in_len:t_absolute + cfg.in_len + cfg.out_len]
 
-        if cfg.features_amount == 6:
+        if cfg.features_amount >= 6:
             for t_lag in range(cfg.in_len):
                 # flux - sst
                 # try:
@@ -289,6 +323,35 @@ def create_torch_data(files_path_prefix, start_year, end_year, cfg):
             x_test[t, :, :, :, 3] = eigenvectors_flux_flux
             x_test[t, :, :, :, 4] = eigenvectors_sst_sst
             x_test[t, :, :, :, 5] = eigenvectors_press_press
+
+        if cfg.features_amount >= 9:
+            for t_lag in range(cfg.in_len):
+                # a flux
+                try:
+                    a_flux[:, :, t_lag] = np.load(files_path_prefix + f'Coeff_data_3d/flux-sst/{t_absolute + offset + t_lag}_A_sens.npy').reshape(
+                        (161, 181))[::2, ::2]
+                except FileNotFoundError:
+                    print(f'Not existing Coeff_data_3d/flux-sst/{t_absolute + offset + t_lag}_A_sens.npy')
+                    a_flux[:, :, t_lag] = np.zeros((cfg.height, cfg.width))
+
+                # a sst
+                try:
+                    a_sst[:, :, t_lag] = np.load(files_path_prefix + f'Coeff_data_3d/flux-sst/{t_absolute + offset + t_lag}_A_lat.npy').reshape(
+                        (161, 181))[::2, ::2]
+                except FileNotFoundError:
+                    print(f'Not existing Coeff_data_3d/flux-sst/{t_absolute + offset + t_lag}_A_lat.npy')
+                    a_sst[:, :, t_lag] = np.zeros((cfg.height, cfg.width))
+
+                # a press
+                try:
+                    a_press[:, :, t_lag] = np.load(files_path_prefix + f'Coeff_data_3d/flux-press/{t_absolute + offset + t_lag}_A_lat.npy').reshape(
+                        (161, 181))[::2, ::2]
+                except FileNotFoundError:
+                    print(f'Not existing Coeff_data_3d/flux-press/{t_absolute + offset + t_lag}_A_lat.npy')
+                    a_press[:, :, t_lag] = np.zeros((cfg.height, cfg.width))
+            x_test[t, :, :, :, 6] = a_flux
+            x_test[t, :, :, :, 7] = a_sst
+            x_test[t, :, :, :, 8] = a_press
 
     np.nan_to_num(x_test, copy=False)
     np.nan_to_num(y_test, copy=False)
@@ -362,3 +425,79 @@ class Data_Labelled(Dataset):
 
     def __len__(self):
         return self.data.shape[1]
+
+
+class Data2(Dataset):
+    def __init__(self, cfg, start_idx, end_idx):
+        super().__init__()
+        self.features_amount = cfg.features_amount
+        self.in_len = cfg.in_len
+        self.out_len = cfg.out_len
+        self.height = cfg.height
+        self.width = cfg.width
+        self.start_idx = start_idx
+        self.end_idx = end_idx
+
+        self.flux_quantiles = np.load(cfg.root_path + f'DATA/FLUX_1979-2025_quantiles.npy')
+        self.sst_quantiles = np.load(cfg.root_path + f'DATA/SST_1979-2025_quantiles.npy')
+        self.press_quantiles = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_quantiles.npy')
+
+        self.flux_array = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_grouped.npy')[start_idx:end_idx]
+        self.sst_array = np.load(cfg.root_path + f'DATA/SST_1979-2025_grouped.npy')[start_idx:end_idx]
+        self.press_array = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_grouped.npy')[start_idx:end_idx]
+        np.nan_to_num(self.flux_array, copy=False)
+        np.nan_to_num(self.sst_array, copy=False)
+        np.nan_to_num(self.press_array, copy=False)
+
+        self.flux_array_quantiles = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_grouped_scaled.npy')[start_idx:end_idx]
+        self.sst_array_quantiles = np.load(cfg.root_path + f'DATA/SST_1979-2025_grouped_scaled.npy')[start_idx:end_idx]
+        self.press_array_quantiles = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_grouped_scaled.npy')[start_idx:end_idx]
+
+        self.eigen_flux = None
+        self.eigen_sst = None
+        self.eigen_press = None
+
+        self.A_flux = None
+        self.A_sst = None
+        self.A_press = None
+
+        if cfg.features_amount == 6 or cfg.features_amount == 9:
+            self.eigen_flux = np.load(cfg.root_path + f'DATA/FLUX_1979-2025_eigen0.npy')[start_idx:end_idx]
+            self.eigen_sst = np.load(cfg.root_path + f'DATA/SST_1979-2025_eigen0.npy')[start_idx:end_idx]
+            self.eigen_press = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_eigen0.npy')[start_idx:end_idx]
+
+        if cfg.features_amount == 9:
+            self.A_flux = np.load(cfg.root_path + f'DATA/FLUX_1979-2025_A.npy')[start_idx:end_idx]
+            self.A_sst = np.load(cfg.root_path + f'DATA/SST_1979-2025_A.npy')[start_idx:end_idx]
+            self.A_press = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_A.npy')[start_idx:end_idx]
+
+    def __getitem__(self, index):
+        sample = np.zeros((self.in_len + self.out_len + self.out_len, self.features_amount, self.height, self.width), dtype=float)
+        for day in range(self.in_len + self.out_len):
+            sample[day, 0] = self.flux_array[index - self.start_idx + day]
+            sample[day, 1] = self.sst_array[index - self.start_idx + day]
+            sample[day, 2] = self.press_array[index - self.start_idx + day]
+        for day in range(self.out_len):
+            sample[self.in_len + self.out_len + day, 0] = self.flux_array_quantiles[index - self.start_idx + day]
+            sample[self.in_len + self.out_len + day, 1] = self.sst_array_quantiles[index - self.start_idx + day]
+            sample[self.in_len + self.out_len + day, 2] = self.press_array_quantiles[index - self.start_idx + day]
+
+        if self.features_amount == 6:
+            for day in range(self.in_len + self.out_len):
+                sample[day, 3] = self.eigen_flux[index - self.start_idx + day]
+                sample[day, 4] = self.eigen_sst[index - self.start_idx + day]
+                sample[day, 5] = self.eigen_press[index - self.start_idx + day]
+        elif self.features_amount == 9:
+            for day in range(self.in_len + self.out_len):
+                sample[day, 3] = self.eigen_flux[index - self.start_idx + day]
+                sample[day, 4] = self.eigen_sst[index - self.start_idx + day]
+                sample[day, 5] = self.eigen_press[index - self.start_idx + day]
+
+                sample[day, 6] = self.A_flux[index - self.start_idx + day]
+                sample[day, 7] = self.A_sst[index - self.start_idx + day]
+                sample[day, 8] = self.A_press[index - self.start_idx + day]
+
+        return torch.from_numpy(sample).float()  # S*C*H*W
+
+    def __len__(self):
+        return self.flux_array.shape[0] - self.in_len - self.out_len

@@ -46,7 +46,7 @@ class OrderedEasyDict(OrderedDict):
 
 cfg = OrderedEasyDict()
 
-cfg.start_year = 2019
+cfg.start_year = 1979
 cfg.features_amount = 3
 # ConvLSTM  MS-LSTM  Att-Unet
 # cfg.model_name = 'Transformer'

@@ -7,7 +7,8 @@ from plotter import plot_predictions
 from sklearn import linear_model
 from sklearn.multioutput import MultiOutputRegressor
 from sklearn.ensemble import GradientBoostingRegressor
-from skimage.metrics import structural_similarity as ssim
+# from skimage.metrics import structural_similarity as ssim
+from SSIM import get_SSIM
 # import tensorflow as tf
 import sys
 import torch
@@ -126,15 +127,17 @@ if __name__ == '__main__':
         mse += np.sum((y_pred - y_test[t][:, :3]) ** 2)
         mae += np.sum(np.abs(y_pred-y_test[t][:, :3]))
         y_pred[:, :, np.logical_not(mask)] = 0
-        for t1 in range(days_prediction):
-            for k in range(3):
-                ssim_arr[t, t1, k] = ssim(y_pred[t1, k], y_test[t, t1, k])
+        # for t1 in range(days_prediction):
+        #     for k in range(3):
+        #         ssim_arr[t, t1, k] = ssim(y_pred[t1, k], y_test[t, t1, k])
+
         for k in range(3):
             y_pred[:, k] = y_pred[:, k] * (max_vals[k] - min_vals[k]) + min_vals[k]
         plot_predictions(files_path_prefix, y_test_copy[t][:, :3], y_pred, 'Linear regression', features_amount, start_day, mask, cfg)
 
-    mse = mse/np.sum(mask)/batch_size/3/cfg.out_len
-    mae = mae/np.sum(mask)/batch_size/3/cfg.out_len
-    print(f'Test MSE regression: {mse:.5f}')
-    print(f'Test MAE regression: {mae:.5f}')
-    print(f'Test SSIM regression: {np.mean(ssim_arr, axis=(0, 1))}')
+
+    # mse = mse/np.sum(mask)/batch_size/3/cfg.out_len
+    # mae = mae/np.sum(mask)/batch_size/3/cfg.out_len
+    # print(f'Test MSE regression: {mse:.5f}')
+    # print(f'Test MAE regression: {mae:.5f}')
+    # print(f'Test SSIM regression: {np.mean(ssim_arr, axis=(0, 1))}')

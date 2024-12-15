@@ -88,15 +88,23 @@ def plot_predictions(files_path_prefix: str,
     flux_max, sst_max, press_max = cfg.max_vals[:3]
 
     # flux_min, sst_min, press_min = 0, 0, 0
-    # flux_max, sst_max, press_max = 1.5, 4, 4
-    # flux_min = min(np.nanmin(Y_test[:, 0]), np.nanmin(Y_predict[:, 0])) / 2
-    # flux_max = max(np.nanmax(Y_test[:, 0]), np.nanmax(Y_predict[:, 0])) * 2
-    #
-    # sst_min = min(np.nanmin(Y_test[:, 1]), np.nanmin(Y_predict[:, 1])) / 2
-    # sst_max = max(np.nanmax(Y_test[:, 1]), np.nanmax(Y_predict[:, 1])) * 2
-    #
-    # press_min = min(np.nanmin(Y_test[:, 2]), np.nanmin(Y_predict[:, 2])) / 2
-    # press_max = max(np.nanmax(Y_test[:, 2]), np.nanmax(Y_predict[:, 2])) * 2
+    # flux_max, sst_max, press_max = 1, 1, 1
+    # flux_min = min(np.nanmin(Y_test[:, 0]), np.nanmin(Y_predict[:, 0]))
+    # flux_max = max(np.nanmax(Y_test[:, 0]), np.nanmax(Y_predict[:, 0]))
+    # flux_min = min(-1, flux_min)
+    # flux_max = max(flux_max, 1)
+
+    # sst_min = min(np.nanmin(Y_test[:, 1]), np.nanmin(Y_predict[:, 1]))
+    # sst_max = max(np.nanmax(Y_test[:, 1]), np.nanmax(Y_predict[:, 1]))
+
+    # press_min = min(np.nanmin(Y_test[:, 2]), np.nanmin(Y_predict[:, 2]))
+    # press_max = max(np.nanmax(Y_test[:, 2]), np.nanmax(Y_predict[:, 2]))
+    # print(flux_min)
+    # print(flux_max)
+    # print(sst_min)
+    # print(sst_max)
+    # print(press_min)
+    # print(press_max)
 
     cmap_flux = get_continuous_cmap(['#000080', '#ffffff', '#ff0000'],
                                     [0, (1.0 - flux_min) / (flux_max - flux_min), 1])
@@ -179,7 +187,7 @@ def plot_predictions(files_path_prefix: str,
                                          interpolation='none',
                                          cmap=cmap_diff,
                                          vmin=0,
-                                         vmax=np.nanmax(np.abs(Y_predict[:, k] - Y_test[:Y_predict.shape[0], k])))
+                                         vmax=np.nanmax(np.abs(Y_predict[:, k] - Y_test[:Y_predict.shape[0], k]))/2)
 
             for i in range(3):
                 fig.colorbar(img[i][t], cax=cax[i][t], orientation='vertical')
