@@ -438,20 +438,16 @@ class Data2(Dataset):
         self.start_idx = start_idx
         self.end_idx = end_idx
 
-        self.flux_quantiles = np.load(cfg.root_path + f'DATA/FLUX_1979-2025_quantiles.npy')
-        self.sst_quantiles = np.load(cfg.root_path + f'DATA/SST_1979-2025_quantiles.npy')
-        self.press_quantiles = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_quantiles.npy')
-
-        self.flux_array = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_grouped.npy')[start_idx:end_idx]
-        self.sst_array = np.load(cfg.root_path + f'DATA/SST_1979-2025_grouped.npy')[start_idx:end_idx]
-        self.press_array = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_grouped.npy')[start_idx:end_idx]
+        self.flux_array = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_grouped_diff.npy')[start_idx:end_idx]
+        self.sst_array = np.load(cfg.root_path + f'DATA/SST_1979-2025_grouped_diff.npy')[start_idx:end_idx]
+        self.press_array = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_grouped_diff.npy')[start_idx:end_idx]
         np.nan_to_num(self.flux_array, copy=False)
         np.nan_to_num(self.sst_array, copy=False)
         np.nan_to_num(self.press_array, copy=False)
 
-        self.flux_array_quantiles = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_grouped_scaled.npy')[start_idx:end_idx]
-        self.sst_array_quantiles = np.load(cfg.root_path + f'DATA/SST_1979-2025_grouped_scaled.npy')[start_idx:end_idx]
-        self.press_array_quantiles = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_grouped_scaled.npy')[start_idx:end_idx]
+        self.flux_quantiles = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_grouped_diff_scaled.npy')[start_idx:end_idx]
+        self.sst_quantiles = np.load(cfg.root_path + f'DATA/SST_1979-2025_grouped_diff_scaled.npy')[start_idx:end_idx]
+        self.press_quantiles = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_grouped_diff_scaled.npy')[start_idx:end_idx]
 
         self.eigen_flux = None
         self.eigen_sst = None
@@ -462,40 +458,48 @@ class Data2(Dataset):
         self.A_press = None
 
         if cfg.features_amount == 6 or cfg.features_amount == 9:
-            self.eigen_flux = np.load(cfg.root_path + f'DATA/FLUX_1979-2025_eigen0.npy')[start_idx:end_idx]
-            self.eigen_sst = np.load(cfg.root_path + f'DATA/SST_1979-2025_eigen0.npy')[start_idx:end_idx]
-            self.eigen_press = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_eigen0.npy')[start_idx:end_idx]
+            self.eigen_flux = np.load(cfg.root_path + f'DATA/FLUX_FLUX_1979-2025_eigen0.npy')[start_idx:end_idx]
+            self.eigen_sst = np.load(cfg.root_path + f'DATA/SST_SST_1979-2025_eigen0.npy')[start_idx:end_idx]
+            self.eigen_press = np.load(cfg.root_path + f'DATA/PRESS_PRESS_1979-2025_eigen0.npy')[start_idx:end_idx]
+
+            np.nan_to_num(self.eigen_flux, copy=False)
+            np.nan_to_num(self.eigen_sst, copy=False)
+            np.nan_to_num(self.eigen_press, copy=False)
 
         if cfg.features_amount == 9:
             self.A_flux = np.load(cfg.root_path + f'DATA/FLUX_1979-2025_A.npy')[start_idx:end_idx]
             self.A_sst = np.load(cfg.root_path + f'DATA/SST_1979-2025_A.npy')[start_idx:end_idx]
             self.A_press = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_A.npy')[start_idx:end_idx]
 
+            np.nan_to_num(self.A_flux, copy=False)
+            np.nan_to_num(self.A_sst, copy=False)
+            np.nan_to_num(self.A_press, copy=False)
+
     def __getitem__(self, index):
         sample = np.zeros((self.in_len + self.out_len + self.out_len, self.features_amount, self.height, self.width), dtype=float)
         for day in range(self.in_len + self.out_len):
-            sample[day, 0] = self.flux_array[index - self.start_idx + day]
-            sample[day, 1] = self.sst_array[index - self.start_idx + day]
-            sample[day, 2] = self.press_array[index - self.start_idx + day]
+            sample[day, 0] = self.flux_array[index + day]
+            sample[day, 1] = self.sst_array[index + day]
+            sample[day, 2] = self.press_array[index + day]
         for day in range(self.out_len):
-            sample[self.in_len + self.out_len + day, 0] = self.flux_array_quantiles[index - self.start_idx + day]
-            sample[self.in_len + self.out_len + day, 1] = self.sst_array_quantiles[index - self.start_idx + day]
-            sample[self.in_len + self.out_len + day, 2] = self.press_array_quantiles[index - self.start_idx + day]
+            sample[self.in_len + self.out_len + day, 0] = self.flux_quantiles[index + day]
+            sample[self.in_len + self.out_len + day, 1] = self.sst_quantiles[index + day]
+            sample[self.in_len + self.out_len + day, 2] = self.press_quantiles[index + day]
 
         if self.features_amount == 6:
             for day in range(self.in_len + self.out_len):
-                sample[day, 3] = self.eigen_flux[index - self.start_idx + day]
-                sample[day, 4] = self.eigen_sst[index - self.start_idx + day]
-                sample[day, 5] = self.eigen_press[index - self.start_idx + day]
+                sample[day, 3] = self.eigen_flux[index + day]
+                sample[day, 4] = self.eigen_sst[index + day]
+                sample[day, 5] = self.eigen_press[index + day]
         elif self.features_amount == 9:
             for day in range(self.in_len + self.out_len):
-                sample[day, 3] = self.eigen_flux[index - self.start_idx + day]
-                sample[day, 4] = self.eigen_sst[index - self.start_idx + day]
-                sample[day, 5] = self.eigen_press[index - self.start_idx + day]
+                sample[day, 3] = self.eigen_flux[index + day]
+                sample[day, 4] = self.eigen_sst[index + day]
+                sample[day, 5] = self.eigen_press[index + day]
 
-                sample[day, 6] = self.A_flux[index - self.start_idx + day]
-                sample[day, 7] = self.A_sst[index - self.start_idx + day]
-                sample[day, 8] = self.A_press[index - self.start_idx + day]
+                sample[day, 6] = self.A_flux[index + day]
+                sample[day, 7] = self.A_sst[index + day]
+                sample[day, 8] = self.A_press[index + day]
 
         return torch.from_numpy(sample).float()  # S*C*H*W
 
