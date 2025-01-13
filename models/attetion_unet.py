@@ -167,7 +167,8 @@ class AttU_Net(nn.Module):
         d2 = self.Up_conv2(d2)
 
         d1 = self.Conv_1x1(d2)
-        output = torch.reshape(d1, (-1, cfg.out_len, cfg.features_amount, d1.shape[2], d1.shape[3]))
+        # output = torch.reshape(d1, (-1, cfg.out_len, cfg.features_amount, d1.shape[2], d1.shape[3]))
+        output = torch.reshape(d1, (-1, cfg.out_len, 3, d1.shape[2], d1.shape[3]))
         output = output[:, :, :, 7:self.height + 7, 2:self.width + 2]
         return output
         # next_layer_hiddens = []
