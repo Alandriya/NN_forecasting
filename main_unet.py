@@ -47,6 +47,7 @@ if __name__ == '__main__':
 
     # parallel group
     torch.distributed.init_process_group(backend="gloo")
+    threads = cfg.dataloader_thread
 
     # model = AttU_Net(cfg.in_len*cfg.features_amount, cfg.out_len*cfg.features_amount, (cfg.batch, cfg.height, cfg.width), 3, 1, 0)
     model = AttU_Net(cfg.in_len * 3, cfg.out_len * 3,
@@ -64,8 +65,8 @@ if __name__ == '__main__':
     model = model.cuda()
     model = nn.parallel.DistributedDataParallel(model, find_unused_parameters=False)
 
+    # reading model weights if save exists
     print(f'Trying to read {model_save_path},\n exists = {os.path.exists(model_save_path)}\n')
-
     if cfg.LOAD_MODEL and os.path.exists(model_save_path):
         print('Loading model')
         # original saved file with DataParallel
@@ -78,7 +79,7 @@ if __name__ == '__main__':
         # load params
         model.load_state_dict(new_state_dict)
 
-    threads = cfg.dataloader_thread
+    # create train and test dataloaders, train from 01.01.1979 to 01.01.2024, test from 01.01.2024 to 28.11.2024
     days_delta1 = (datetime.datetime(2024, 1, 1, 0, 0) - datetime.datetime(1979, 1, 1, 0, 0)).days
     days_delta2 = (datetime.datetime(2024, 11, 28, 0, 0) - datetime.datetime(2024, 1, 1, 0, 0)).days
     train_data = Data2(cfg, 0, days_delta1)
@@ -98,31 +99,20 @@ if __name__ == '__main__':
             epoch_loss = 0.0
             print(f'Epoch {epoch}/{cfg.epoch}', flush=True)
             for idx, train_batch in enumerate(train_loader):
+                optimizer.zero_grad()
                 train_batch = normalize_data_cuda(train_batch, cfg.min_vals, cfg.max_vals)
                 input = train_batch[:, :cfg.in_len, :3].clone()
                 input = input.cuda()
-                optimizer.zero_grad()
                 train_pred = model(input)
-                if cfg.model_name == 'Attention U-net labels':
-                    if criterion == Loss_MSE:
-                        loss_labels =criterion(train_batch[:, cfg.in_len + cfg.out_len:, :3], train_pred[:, :, :3])
-                    else:
-                        loss_labels = criterion(train_batch[:, cfg.in_len + cfg.out_len:, :3],
-                                                  train_pred[:, :, :3], train_batch[:, cfg.in_len + cfg.out_len:, 3:6])
-                    loss_labels.backward()
-                    optimizer.step()
-                    loss_labels = reduce_tensor(loss_labels)  # all reduce
-                    epoch_loss += loss_labels.item()
+                if criterion == Loss_MSE:
+                    loss = criterion(train_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, :3], train_pred[:, :, :3])
                 else:
-                    if criterion == Loss_MSE:
-                        loss = criterion(train_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, :3], train_pred[:, :, :3])
-                    else:
-                        loss = criterion(train_batch[:, cfg.in_len + cfg.out_len:, :3],
-                                  train_pred[:, :, :3], train_batch[:, cfg.in_len + cfg.out_len:, 3:6])
-                    loss.backward()
-                    optimizer.step()
-                    loss = reduce_tensor(loss)  # all reduce
-                    epoch_loss += loss.item()
+                    loss = criterion(train_batch[:, cfg.in_len + cfg.out_len:, :3],
+                              train_pred[:, :, :3], train_batch[:, cfg.in_len + cfg.out_len:, 3:6])
+                loss.backward()
+                optimizer.step()
+                loss = reduce_tensor(loss)  # all reduce
+                epoch_loss += loss.item()
 
             train_loss[epoch-1] = epoch_loss
             if is_master_proc():
@@ -162,34 +152,12 @@ if __name__ == '__main__':
                 for idx, test_batch in enumerate(test_loader):
                     print(f'batch {idx}')
                     test_batch = normalize_data_cuda(test_batch, cfg.min_vals, cfg.max_vals)
-
-                    if cfg.model_name == 'Attention U-net labels':
-                        test_pred = model(test_batch[:, :cfg.in_len, :3])
-                        if criterion == Loss_MSE:
-                            loss = criterion(test_batch[:, cfg.in_len + cfg.out_len:, :3],
-                                             test_pred[:, :, :3])
-                        else:
-                            loss = criterion(test_batch[:, cfg.in_len + cfg.out_len:, :3],
-                                             test_pred[:, :, :3], test_batch[:, cfg.in_len + cfg.out_len:, 3:6])
-                        print(tuple(torch.amin(test_pred[:, :, :3], dim=(0, 1, 3, 4))))
-                        print(tuple(torch.amax(test_pred[:, :, :3], dim=(0, 1, 3, 4))))
-                        print('\n')
-                        test_pred_labels = test_pred * cfg.bins
-                        test_pred_labels = test_pred_labels.int()
-                        test_pred_values = torch.zeros_like(test_pred)
-                        for channel in range(3):
-                            for q in range(cfg.bins):
-                                test_pred_values[:, :, channel][test_pred_labels[:, :, channel] == q+1] = (quantiles[channel][q] + quantiles[channel][q+1])/2
-                        test_pred_values = normalize_data_cuda(test_pred_values, cfg.min_vals, cfg.max_vals)
-
+                    test_pred_values = model(test_batch[:, :cfg.in_len, :3])
+                    if criterion == Loss_MSE:
+                        loss = criterion(test_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, :3], test_pred_values[:, :, :3])
                     else:
-                        # test_pred_values = model(test_batch[:, :cfg.in_len])
-                        test_pred_values = model(test_batch[:, :cfg.in_len, :3])
-                        if criterion == Loss_MSE:
-                            loss = criterion(test_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, :3], test_pred_values[:, :, :3])
-                        else:
-                            loss = criterion(test_batch[:, cfg.in_len + cfg.out_len:, :3],
-                                         test_pred_values[:, :, :3], test_batch[:, cfg.in_len + cfg.out_len:, 3:6])
+                        loss = criterion(test_batch[:, cfg.in_len + cfg.out_len:, :3],
+                                     test_pred_values[:, :, :3], test_batch[:, cfg.in_len + cfg.out_len:, 3:6])
 
                     test_batch_scaled = test_batch.clone().detach()
                     truth = test_batch_scaled[:, cfg.in_len:cfg.in_len + cfg.out_len].detach().clone()
@@ -226,7 +194,6 @@ if __name__ == '__main__':
                         loss_values = criterion(test_batch[:, cfg.in_len + cfg.out_len:, :3],
                                   test_pred_values[:, :, :3], test_batch[:, cfg.in_len + cfg.out_len:, 3:6])
 
-
                     differ = test_batch_scaled[:, cfg.in_len:cfg.in_len + cfg.out_len, :3] - test_pred_values
                     loss_divided = torch.mean(torch.sum(differ ** 2, (3, 4)), (0, 1))
 
@@ -238,12 +205,6 @@ if __name__ == '__main__':
                             plot_predictions(cfg.root_path, test_batch_numpy[cfg.in_len:cfg.in_len + cfg.out_len],
                                              test_pred_numpy, cfg.model_name,
                                              cfg.features_amount, day, mask, cfg)
-                            if cfg.model_name == 'Attention U-net labels':
-                                test_pred_labels_numpy = test_pred_labels[i, :, :3].cpu().numpy()
-                                plot_predictions(cfg.root_path, np.array(test_batch_numpy[cfg.in_len + cfg.out_len:,], dtype=float),
-                                                 np.array(test_pred_labels_numpy, dtype=float), cfg.model_name + ' labels',
-                                                 cfg.features_amount, day, mask, cfg)
-                    if idx == 0:
                         break
             print(f'SSIM flux = {ssim_flux/amount}')
             print(f'SSIM sst = {ssim_sst / amount}')
