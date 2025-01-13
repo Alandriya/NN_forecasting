@@ -84,21 +84,21 @@ def plot_predictions(files_path_prefix: str,
     # axs[1].set_title('Predicted values', fontsize=20)
     # axs[2].set_title('Absolute difference', fontsize=20)
 
-    flux_min, sst_min, press_min = cfg.min_vals[:3]
-    flux_max, sst_max, press_max = cfg.max_vals[:3]
+    # flux_min, sst_min, press_min = cfg.min_vals[:3]
+    # flux_max, sst_max, press_max = cfg.max_vals[:3]
 
     # flux_min, sst_min, press_min = 0, 0, 0
     # flux_max, sst_max, press_max = 1, 1, 1
-    # flux_min = min(np.nanmin(Y_test[:, 0]), np.nanmin(Y_predict[:, 0]))
-    # flux_max = max(np.nanmax(Y_test[:, 0]), np.nanmax(Y_predict[:, 0]))
+    flux_min = min(np.nanmin(Y_test[:, 0]), np.nanmin(Y_predict[:, 0]))
+    flux_max = max(np.nanmax(Y_test[:, 0]), np.nanmax(Y_predict[:, 0]))
     # flux_min = min(-1, flux_min)
     # flux_max = max(flux_max, 1)
 
-    # sst_min = min(np.nanmin(Y_test[:, 1]), np.nanmin(Y_predict[:, 1]))
-    # sst_max = max(np.nanmax(Y_test[:, 1]), np.nanmax(Y_predict[:, 1]))
+    sst_min = min(np.nanmin(Y_test[:, 1]), np.nanmin(Y_predict[:, 1]))
+    sst_max = max(np.nanmax(Y_test[:, 1]), np.nanmax(Y_predict[:, 1]))
 
-    # press_min = min(np.nanmin(Y_test[:, 2]), np.nanmin(Y_predict[:, 2]))
-    # press_max = max(np.nanmax(Y_test[:, 2]), np.nanmax(Y_predict[:, 2]))
+    press_min = min(np.nanmin(Y_test[:, 2]), np.nanmin(Y_predict[:, 2]))
+    press_max = max(np.nanmax(Y_test[:, 2]), np.nanmax(Y_predict[:, 2]))
     # print(flux_min)
     # print(flux_max)
     # print(sst_min)
@@ -113,17 +113,17 @@ def plot_predictions(files_path_prefix: str,
     # cmap_flux = plt.get_cmap('plasma').copy()
     cmap_flux.set_bad('lightgreen', 1.0)
     # cmap_sst = get_continuous_cmap(['#ffffff', '#ff0000'], [0, 1])
-    cmap_sst = plt.get_cmap('Oranges').copy()
+    # cmap_sst = plt.get_cmap('Oranges').copy()
     # cmap_sst = plt.get_cmap('Blues').copy()
-    # cmap_sst = get_continuous_cmap(['#000080', '#ffffff', '#ff0000'],
-    #                                 [0, (1.0 - sst_min) / (sst_max - sst_min), 1])
+    cmap_sst = get_continuous_cmap(['#000080', '#ffffff', '#ff0000'],
+                                    [0, (1.0 - sst_min) / (sst_max - sst_min), 1])
     # cmap_sst = get_continuous_cmap(['#ffffff', '#ff0000'], [0, 1])
     cmap_sst.set_bad('lightgreen', 1.0)
     # cmap_press = get_continuous_cmap(['#ffffff', '#ff0000'], [0, 1])
-    cmap_press = plt.get_cmap('Purples').copy()
+    # cmap_press = plt.get_cmap('Purples').copy()
     # cmap_press = plt.get_cmap('Blues').copy()
-    # cmap_press = get_continuous_cmap(['#000080', '#ffffff', '#ff0000'],
-    #                                 [0, (1.0 - press_min) / (press_max - press_min), 1])
+    cmap_press = get_continuous_cmap(['#000080', '#ffffff', '#ff0000'],
+                                    [0, (1.0 - press_min) / (press_max - press_min), 1])
     # cmap_press = get_continuous_cmap(['#ffffff', '#ff0000'], [0, 1])
     cmap_press.set_bad('lightgreen', 1.0)
 
