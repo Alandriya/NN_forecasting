@@ -311,6 +311,7 @@ if __name__ == '__main__':
     days_delta7 = (datetime.datetime(2024, 11, 28, 0, 0) - datetime.datetime(2024, 1, 1, 0, 0)).days
     # ----------------------------------------------------------------------------------------------
     days_delta8 = (datetime.datetime(2024, 11, 28, 0, 0) - datetime.datetime(1979, 1, 1, 0, 0)).days
+    days_delta9 = (datetime.datetime(2024, 1, 1, 0, 0) - datetime.datetime(1979, 1, 1, 0, 0)).days
     # variable = 'SST'
 
     # full_array = np.zeros((days_delta8, cfg.height, cfg.width), dtype=float)
@@ -357,19 +358,37 @@ if __name__ == '__main__':
     #     a_coeff[day] = a_day
     # np.save(files_path_prefix + f'DATA/{variable}_1979-2025_a_coeff.npy', a_coeff)
 
-    flux_array = np.load(files_path_prefix + f'DATA/FLUX_1979-2025_grouped.npy')
-    sst_array = np.load(files_path_prefix + f'DATA/SST_1979-2025_grouped.npy')
-    press_array = np.load(files_path_prefix + f'DATA/PRESS_1979-2025_grouped.npy')
+    # flux_array = np.load(files_path_prefix + f'DATA/FLUX_1979-2025_grouped.npy')
+    # sst_array = np.load(files_path_prefix + f'DATA/SST_1979-2025_grouped.npy')
+    # press_array = np.load(files_path_prefix + f'DATA/PRESS_1979-2025_grouped.npy')
+    #
+    # np.save(files_path_prefix + f'DATA/FLUX_1979-2025_grouped_diff.npy', np.diff(flux_array, axis=0))
+    # np.save(files_path_prefix + f'DATA/SST_1979-2025_grouped_diff.npy', np.diff(sst_array, axis=0))
+    # np.save(files_path_prefix + f'DATA/PRESS_1979-2025_grouped_diff.npy', np.diff(press_array, axis=0))
+    #
+    # np.nan_to_num(flux_array, copy=False)
+    # np.nan_to_num(sst_array, copy=False)
+    # np.nan_to_num(press_array, copy=False)
 
-    np.save(files_path_prefix + f'DATA/FLUX_1979-2025_grouped_diff.npy', np.diff(flux_array, axis=0))
-    np.save(files_path_prefix + f'DATA/SST_1979-2025_grouped_diff.npy', np.diff(sst_array, axis=0))
-    np.save(files_path_prefix + f'DATA/PRESS_1979-2025_grouped_diff.npy', np.diff(press_array, axis=0))
-
+    # for variable in ['FLUX', 'SST', 'PRESS']:
+    #     array = np.load(files_path_prefix + f'DATA/{variable}_1979-2025_grouped_diff.npy')
+    #     array_scaled, quantiles = scale_to_bins(array, bins=cfg.bins)
+    #     np.save(files_path_prefix + f'DATA/{variable}_1979-2025_grouped_diff_scaled.npy', array_scaled)
+    #     np.save(files_path_prefix + f'DATA/{variable}_1979-2025_diff_quantiles.npy', np.array(quantiles))
+    #     print(np.array(quantiles))
     for variable in ['FLUX', 'SST', 'PRESS']:
-        array = np.load(files_path_prefix + f'DATA/{variable}_1979-2025_grouped_diff.npy')
-        array_scaled, quantiles = scale_to_bins(array, bins=cfg.bins)
-        np.save(files_path_prefix + f'DATA/{variable}_1979-2025_grouped_diff_scaled.npy', array_scaled)
-        np.save(files_path_prefix + f'DATA/{variable}_1979-2025_diff_quantiles.npy', quantiles)
+        array = np.load(files_path_prefix + f'DATA/{variable}_1979-2025_grouped_diff.npy')[0:days_delta9]
+        mean_year = np.zeros((365, 81, 91))
+        for year in range(1979, 2024):
+            print(year)
+            for i in range(365):
+                day = (datetime.datetime(year, 1, 1, 0, 0) -
+                       datetime.datetime(1979, 1, 1, 0, 0)).days + i
+                mean_year[i] += array[day]
+
+        mean_year /= (2024-1979)
+        np.save(files_path_prefix + f'DATA/{variable}_mean_year_diff.npy', mean_year)
+
 
     # count_eigenvalues_triplets(files_path_prefix, 0, flux_array, sst_array, press_array, mask, 0, 100)
 
