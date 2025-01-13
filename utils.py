@@ -1,8 +1,7 @@
 import numpy as np
-
 import datetime
 import os
-
+import random
 import torch
 from config import cfg
 import time
@@ -23,6 +22,17 @@ if 'kth' in cfg.dataset:
 gpu_nums = cfg.gpu_nums
 decimals = cfg.metrics_decimals
 
+# fix random seed
+def fix_random(seed):
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.enabled = False
 
 def sum_batch(data):
     return data.sum(axis=0)
@@ -86,7 +96,8 @@ class Evaluation(object):
 def normalize_data_cuda(batch, min_vals, max_vals):
     for channel in range(3):
         batch[:, :cfg.in_len + cfg.out_len, channel] = (batch[:, :cfg.in_len + cfg.out_len, channel] - min_vals[channel]) / (max_vals[channel] - min_vals[channel])
-    return batch.cuda()
+    # return batch.cuda()
+    return batch
 
 
 def reduce_tensor(tensor):
