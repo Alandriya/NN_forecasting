@@ -69,3 +69,19 @@ class Loss_MSE(nn.Module):
         mse = torch.sum(differ ** 2, (2, 3, 4))  # b s
         mse = torch.mean(mse)  # 1
         return mse
+
+
+class Loss_MSE_eigenvalues(nn.Module):
+    def __init__(self):
+        super().__init__()
+        pass
+
+    def forward(self, truth, pred, eigens, alpha = 0.0):
+        # print(truth.shape)
+        # print(pred.shape)
+        # print(eigens.shape)
+
+        differ = truth - pred  # b s c h w
+        mse = torch.sum(differ ** 2 * (1-alpha) + eigens * alpha, (2, 3, 4))  # b s
+        mse = torch.mean(mse)  # 1
+        return mse
