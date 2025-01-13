@@ -1,6 +1,6 @@
-# files_path_prefix = '/home/aosipova/EM_ocean/'
+files_path_prefix = '/home/aosipova/EM_ocean/'
 SHORT_POSTFIX = ''
-files_path_prefix = 'D:/Nastya/Data/OceanFull/'
+# files_path_prefix = 'D:/Nastya/Data/OceanFull/'
 # SHORT_POSTFIX = '_short'
 # files_path_prefix = 'D:/Programming/PythonProjects/Alana/Data/'
 # SHORT_POSTFIX = '_short'
@@ -51,7 +51,7 @@ cfg.features_amount = 3
 # ConvLSTM  MS-LSTM  Att-Unet
 # cfg.model_name = 'Transformer'
 cfg.model_name = 'Attention U-net labels'
-cfg.nn_mode = 'test'
+cfg.nn_mode = 'train'
 
 cfg.bins = 100
 cfg.LOAD_MODEL = True
@@ -73,11 +73,14 @@ cfg.width = 91
 cfg.height = 81
 cfg.in_len = 7
 cfg.out_len = 5
-cfg.epoch = 25
-cfg.min_vals = (0, 0, 0)
-cfg.max_vals = (1, 1, 1)
-# cfg.min_vals = (0, 0, 0)
-# cfg.max_vals = (cfg.bins, cfg.bins, cfg.bins)
+cfg.epoch = 100
+flux_quantiles = np.load(files_path_prefix + f'DATA/PRESS_1979-2025_diff_quantiles.npy')
+sst_quantiles = np.load(files_path_prefix + f'DATA/SST_1979-2025_diff_quantiles.npy')
+press_quantiles = np.load(files_path_prefix + f'DATA/PRESS_1979-2025_diff_quantiles.npy')
+
+cfg.min_vals = (flux_quantiles[0], sst_quantiles[0], press_quantiles[0])
+cfg.max_vals = (flux_quantiles[-1], sst_quantiles[-1], press_quantiles[-1])# cfg.min_vals = (0, 0, 0)
+
 
 cfg.early_stopping = False
 cfg.early_stopping_patience = 3
@@ -86,7 +89,7 @@ if 'mnist' in cfg.dataset:
 else:
     cfg.valid_num = int(cfg.epoch * 1)
 cfg.valid_epoch = cfg.epoch // cfg.valid_num
-cfg.LR = 0.0003
+cfg.LR = 0.00035
 cfg.optimizer = 'Adam'
 cfg.dataloader_thread = 0
 cfg.data_type = np.float32
