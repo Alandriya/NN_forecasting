@@ -1,3 +1,4 @@
+from sympy.physics.units import years
 from torch.utils.data import Dataset
 import os
 # import cv2
@@ -5,7 +6,7 @@ import sys
 sys.path.append("..")
 from config import cfg
 import numpy as np
-from datetime import datetime
+import datetime
 import torch
 from struct import unpack
 from torch.utils.data import TensorDataset, DataLoader
@@ -61,12 +62,12 @@ def load_mask(files_path_prefix):
 def count_offset(start_year):
     # --------------------------------------------------------------------------------
     # Days deltas
-    days_delta1 = (datetime(1989, 1, 1, 0, 0) - datetime(1979, 1, 1, 0, 0)).days
-    days_delta2 = (datetime(1999, 1, 1, 0, 0) - datetime(1989, 1, 1, 0, 0)).days
-    days_delta3 = (datetime(2009, 1, 1, 0, 0) - datetime(1999, 1, 1, 0, 0)).days
-    days_delta4 = (datetime(2019, 1, 1, 0, 0) - datetime(2009, 1, 1, 0, 0)).days
-    days_delta5 = (datetime(2024, 1, 1, 0, 0) - datetime(2019, 1, 1, 0, 0)).days
-    days_delta6 = (datetime(2024, 4, 28, 0, 0) - datetime(2019, 1, 1, 0, 0)).days
+    days_delta1 = (datetime.datetime(1989, 1, 1, 0, 0) - datetime.datetime(1979, 1, 1, 0, 0)).days
+    days_delta2 = (datetime.datetime(1999, 1, 1, 0, 0) - datetime.datetime(1989, 1, 1, 0, 0)).days
+    days_delta3 = (datetime.datetime(2009, 1, 1, 0, 0) - datetime.datetime(1999, 1, 1, 0, 0)).days
+    days_delta4 = (datetime.datetime(2019, 1, 1, 0, 0) - datetime.datetime(2009, 1, 1, 0, 0)).days
+    days_delta5 = (datetime.datetime(2024, 1, 1, 0, 0) - datetime.datetime(2019, 1, 1, 0, 0)).days
+    days_delta6 = (datetime.datetime(2024, 4, 28, 0, 0) - datetime.datetime(2019, 1, 1, 0, 0)).days
     # ----------------------------------------------------------------------------------------------
 
     if start_year == 1979:
@@ -390,15 +391,15 @@ def create_dataloaders(files_path_prefix, start_year, end_year, cfg):
     return train_dataset, test_dataset, test_dataset
 
 
-def create_dataloader_encoder_decoder(files_path_prefix, start_year, end_year, cfg):
-    if not os.path.exists(files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_x_train_{cfg.features_amount}{cfg.postfix_short}.pt'):
-        create_torch_data(files_path_prefix, start_year, end_year, cfg)
-    x_train = torch.load(files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_x_train_{cfg.features_amount}{cfg.postfix_short}.pt')
-    # print(x_train.shape)
-    cfg.min_vals = tuple(torch.amin(x_train, dim=(0, 1, 2, 3)))
-    cfg.max_vals = tuple(torch.amax(x_train, dim=(0, 1, 2, 3)))
-    train_dataset = Data(x_train, x_train)
-    return train_dataset
+# def create_dataloader_encoder_decoder(files_path_prefix, start_year, end_year, cfg):
+#     if not os.path.exists(files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_x_train_{cfg.features_amount}{cfg.postfix_short}.pt'):
+#         create_torch_data(files_path_prefix, start_year, end_year, cfg)
+#     x_train = torch.load(files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_x_train_{cfg.features_amount}{cfg.postfix_short}.pt')
+#     # print(x_train.shape)
+#     cfg.min_vals = tuple(torch.amin(x_train, dim=(0, 1, 2, 3)))
+#     cfg.max_vals = tuple(torch.amax(x_train, dim=(0, 1, 2, 3)))
+#     train_dataset = Data(x_train, x_train)
+#     return train_dataset
 
 
 class Data(Dataset):
@@ -445,9 +446,20 @@ class Data2(Dataset):
         np.nan_to_num(self.sst_array, copy=False)
         np.nan_to_num(self.press_array, copy=False)
 
-        self.flux_quantiles = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_grouped_diff_scaled.npy')[start_idx:end_idx]
-        self.sst_quantiles = np.load(cfg.root_path + f'DATA/SST_1979-2025_grouped_diff_scaled.npy')[start_idx:end_idx]
-        self.press_quantiles = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_grouped_diff_scaled.npy')[start_idx:end_idx]
+        self.flux_quantiles = np.load(cfg.root_path + f'DATA/FLUX_1979-2025_diff_quantiles.npy')
+        self.sst_quantiles = np.load(cfg.root_path + f'DATA/SST_1979-2025_diff_quantiles.npy')
+        self.press_quantiles = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_diff_quantiles.npy')
+
+        self.flux_mean_year = np.load(cfg.root_path + f'DATA/FLUX_mean_year_diff.npy')
+        self.sst_mean_year = np.load(cfg.root_path + f'DATA/SST_mean_year_diff.npy')
+        self.press_mean_year = np.load(cfg.root_path + f'DATA/PRESS_mean_year_diff.npy')
+        np.nan_to_num(self.flux_mean_year, copy=False)
+        np.nan_to_num(self.sst_mean_year, copy=False)
+        np.nan_to_num(self.press_mean_year, copy=False)
+
+        self.flux_scaled = np.load(cfg.root_path + f'DATA/FLUX_1979-2025_grouped_diff_scaled.npy')[start_idx:end_idx]
+        self.sst_scaled = np.load(cfg.root_path + f'DATA/SST_1979-2025_grouped_diff_scaled.npy')[start_idx:end_idx]
+        self.press_scaled = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_grouped_diff_scaled.npy')[start_idx:end_idx]
 
         self.eigen_flux = None
         self.eigen_sst = None
@@ -457,7 +469,17 @@ class Data2(Dataset):
         self.A_sst = None
         self.A_press = None
 
-        if cfg.features_amount == 6 or cfg.features_amount == 9:
+
+    # if cfg.features_amount == 6 or cfg.features_amount == 9:
+        #     self.A_flux = np.load(cfg.root_path + f'DATA/FLUX_1979-2025_a_coeff.npy')[start_idx:end_idx]
+        #     self.A_sst = np.load(cfg.root_path + f'DATA/SST_1979-2025_a_coeff.npy')[start_idx:end_idx]
+        #     self.A_press = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_a_coeff.npy')[start_idx:end_idx]
+        #
+        #     np.nan_to_num(self.A_flux, copy=False)
+        #     np.nan_to_num(self.A_sst, copy=False)
+        #     np.nan_to_num(self.A_press, copy=False)
+
+        if cfg.features_amount == 6:
             self.eigen_flux = np.load(cfg.root_path + f'DATA/FLUX_FLUX_1979-2025_eigen0.npy')[start_idx:end_idx]
             self.eigen_sst = np.load(cfg.root_path + f'DATA/SST_SST_1979-2025_eigen0.npy')[start_idx:end_idx]
             self.eigen_press = np.load(cfg.root_path + f'DATA/PRESS_PRESS_1979-2025_eigen0.npy')[start_idx:end_idx]
@@ -466,14 +488,11 @@ class Data2(Dataset):
             np.nan_to_num(self.eigen_sst, copy=False)
             np.nan_to_num(self.eigen_press, copy=False)
 
-        if cfg.features_amount == 9:
-            self.A_flux = np.load(cfg.root_path + f'DATA/FLUX_1979-2025_A.npy')[start_idx:end_idx]
-            self.A_sst = np.load(cfg.root_path + f'DATA/SST_1979-2025_A.npy')[start_idx:end_idx]
-            self.A_press = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_A.npy')[start_idx:end_idx]
 
-            np.nan_to_num(self.A_flux, copy=False)
-            np.nan_to_num(self.A_sst, copy=False)
-            np.nan_to_num(self.A_press, copy=False)
+    # def update_cfg(self, cfg):
+    #     cfg.min_vals = (self.flux_quantiles[0], self.sst_quantiles[0], self.press_quantiles[0])
+    #     cfg.max_vals = (self.flux_quantiles[-1], self.sst_quantiles[-1], self.press_quantiles[-1])
+    #     return cfg
 
     def __getitem__(self, index):
         sample = np.zeros((self.in_len + self.out_len + self.out_len, self.features_amount, self.height, self.width), dtype=float)
@@ -482,24 +501,41 @@ class Data2(Dataset):
             sample[day, 1] = self.sst_array[index + day]
             sample[day, 2] = self.press_array[index + day]
         for day in range(self.out_len):
-            sample[self.in_len + self.out_len + day, 0] = self.flux_quantiles[index + day]
-            sample[self.in_len + self.out_len + day, 1] = self.sst_quantiles[index + day]
-            sample[self.in_len + self.out_len + day, 2] = self.press_quantiles[index + day]
+            sample[self.in_len + self.out_len + day, 0] = self.flux_scaled[index + self.in_len + day]
+            sample[self.in_len + self.out_len + day, 1] = self.sst_scaled[index + self.in_len + day]
+            sample[self.in_len + self.out_len + day, 2] = self.press_scaled[index + self.in_len + day]
 
         if self.features_amount == 6:
             for day in range(self.in_len + self.out_len):
                 sample[day, 3] = self.eigen_flux[index + day]
                 sample[day, 4] = self.eigen_sst[index + day]
                 sample[day, 5] = self.eigen_press[index + day]
-        elif self.features_amount == 9:
-            for day in range(self.in_len + self.out_len):
-                sample[day, 3] = self.eigen_flux[index + day]
-                sample[day, 4] = self.eigen_sst[index + day]
-                sample[day, 5] = self.eigen_press[index + day]
+        # elif self.features_amount == 9:
+        #     for day in range(self.in_len + self.out_len):
+        #         sample[day, 3] = self.eigen_flux[index + day]
+        #         sample[day, 4] = self.eigen_sst[index + day]
+        #         sample[day, 5] = self.eigen_press[index + day]
+        #
+        #         sample[day, 6] = self.A_flux[index + day]
+        #         sample[day, 7] = self.A_sst[index + day]
+        #         sample[day, 8] = self.A_press[index + day]
+        # if self.features_amount == 9:
+            # for day in range(self.in_len):
+            #     day_dt = datetime.datetime(1979, 1, 1) + datetime.timedelta(days=index+cfg.in_len + day)
+            #     day_shift = (day_dt - datetime.datetime(day_dt.year, 1, 1)).days
+            #     sample[day, 3] = self.flux_mean_year[day_shift % 365]
+            #     sample[day, 4] = self.sst_mean_year[day_shift % 365]
+            #     sample[day, 5] = self.press_mean_year[day_shift % 365]
+            #
+            #     if not day_dt.year == 1979:
+            #         try:
+            #             offset = (datetime.datetime(day_dt.year-1, day_dt.month, day_dt.day) - datetime.datetime(1979, 1, 1)).days
+            #         except ValueError:
+            #             offset = (datetime.datetime(day_dt.year - 1, day_dt.month, day_dt.day-1) - datetime.datetime(1979,1, 1)).days
+            #         sample[day, 6] = self.flux_array[offset]
+            #         sample[day, 7] = self.sst_array[offset]
+            #         sample[day, 8] = self.press_array[offset]
 
-                sample[day, 6] = self.A_flux[index + day]
-                sample[day, 7] = self.A_sst[index + day]
-                sample[day, 8] = self.A_press[index + day]
 
         return torch.from_numpy(sample).float()  # S*C*H*W
 
