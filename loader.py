@@ -470,16 +470,16 @@ class Data2(Dataset):
         self.A_press = None
 
 
-    # if cfg.features_amount == 6 or cfg.features_amount == 9:
-        #     self.A_flux = np.load(cfg.root_path + f'DATA/FLUX_1979-2025_a_coeff.npy')[start_idx:end_idx]
-        #     self.A_sst = np.load(cfg.root_path + f'DATA/SST_1979-2025_a_coeff.npy')[start_idx:end_idx]
-        #     self.A_press = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_a_coeff.npy')[start_idx:end_idx]
-        #
-        #     np.nan_to_num(self.A_flux, copy=False)
-        #     np.nan_to_num(self.A_sst, copy=False)
-        #     np.nan_to_num(self.A_press, copy=False)
+        if cfg.features_amount >= 6:
+            self.A_flux = np.load(cfg.root_path + f'DATA/FLUX_1979-2025_a_coeff.npy')[start_idx:end_idx]
+            self.A_sst = np.load(cfg.root_path + f'DATA/SST_1979-2025_a_coeff.npy')[start_idx:end_idx]
+            self.A_press = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_a_coeff.npy')[start_idx:end_idx]
 
-        if cfg.features_amount == 6:
+            np.nan_to_num(self.A_flux, copy=False)
+            np.nan_to_num(self.A_sst, copy=False)
+            np.nan_to_num(self.A_press, copy=False)
+
+        if cfg.features_amount == 12:
             self.eigen_flux = np.load(cfg.root_path + f'DATA/FLUX_FLUX_1979-2025_eigen0.npy')[start_idx:end_idx]
             self.eigen_sst = np.load(cfg.root_path + f'DATA/SST_SST_1979-2025_eigen0.npy')[start_idx:end_idx]
             self.eigen_press = np.load(cfg.root_path + f'DATA/PRESS_PRESS_1979-2025_eigen0.npy')[start_idx:end_idx]
@@ -488,28 +488,41 @@ class Data2(Dataset):
             np.nan_to_num(self.eigen_sst, copy=False)
             np.nan_to_num(self.eigen_press, copy=False)
 
+            self.eigen_flux_sst = np.load(cfg.root_path + f'DATA/FLUX_SST_1979-2025_eigen0.npy')[start_idx:end_idx]
+            self.eigen_flux_press = np.load(cfg.root_path + f'DATA/FLUX_PRESS_1979-2025_eigen0.npy')[start_idx:end_idx]
+            self.eigen_sst_press = np.load(cfg.root_path + f'DATA/SST_PRESS_1979-2025_eigen0.npy')[start_idx:end_idx]
 
-    # def update_cfg(self, cfg):
-    #     cfg.min_vals = (self.flux_quantiles[0], self.sst_quantiles[0], self.press_quantiles[0])
-    #     cfg.max_vals = (self.flux_quantiles[-1], self.sst_quantiles[-1], self.press_quantiles[-1])
-    #     return cfg
+            np.nan_to_num(self.eigen_flux_sst, copy=False)
+            np.nan_to_num(self.eigen_flux_press, copy=False)
+            np.nan_to_num(self.eigen_sst_press, copy=False)
 
     def __getitem__(self, index):
-        sample = np.zeros((self.in_len + self.out_len + self.out_len, self.features_amount, self.height, self.width), dtype=float)
+        sample = np.zeros((self.in_len + self.out_len, self.features_amount, self.height, self.width), dtype=float)
         for day in range(self.in_len + self.out_len):
             sample[day, 0] = self.flux_array[index + day]
             sample[day, 1] = self.sst_array[index + day]
             sample[day, 2] = self.press_array[index + day]
-        for day in range(self.out_len):
-            sample[self.in_len + self.out_len + day, 0] = self.flux_scaled[index + self.in_len + day]
-            sample[self.in_len + self.out_len + day, 1] = self.sst_scaled[index + self.in_len + day]
-            sample[self.in_len + self.out_len + day, 2] = self.press_scaled[index + self.in_len + day]
+        # for day in range(self.out_len):
+        #     sample[self.in_len + self.out_len + day, 0] = self.flux_scaled[index + self.in_len + day]
+        #     sample[self.in_len + self.out_len + day, 1] = self.sst_scaled[index + self.in_len + day]
+        #     sample[self.in_len + self.out_len + day, 2] = self.press_scaled[index + self.in_len + day]
 
-        if self.features_amount == 6:
-            for day in range(self.in_len + self.out_len):
-                sample[day, 3] = self.eigen_flux[index + day]
-                sample[day, 4] = self.eigen_sst[index + day]
-                sample[day, 5] = self.eigen_press[index + day]
+        # A and eigens are used from future to go into loss
+        if self.features_amount >= 6:
+            for day in range(self.out_len):
+                sample[day, 3] = self.A_flux[index + self.in_len + day]
+                sample[day, 4] = self.A_sst[index + self.in_len + day]
+                sample[day, 5] = self.A_press[index + self.in_len + day]
+
+        if self.features_amount == 12:
+            for day in range(self.out_len):
+                sample[day, 6] = self.eigen_flux[index + self.in_len + day]
+                sample[day, 7] = self.eigen_sst[index + self.in_len + day]
+                sample[day, 8] = self.eigen_press[index + self.in_len + day]
+
+                sample[day, 9] = self.eigen_flux_sst[index + self.in_len + day]
+                sample[day, 10] = self.eigen_flux_press[index + self.in_len + day]
+                sample[day, 11] = self.eigen_sst_press[index + self.in_len + day]
         # elif self.features_amount == 9:
         #     for day in range(self.in_len + self.out_len):
         #         sample[day, 3] = self.eigen_flux[index + day]

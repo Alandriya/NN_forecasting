@@ -68,7 +68,8 @@ def plot_predictions(files_path_prefix: str,
                      features_amount: int,
                      start_day: datetime.datetime,
                      mask: np.ndarray,
-                     cfg: None):
+                     cfg: None,
+                     postfix_simple=True):
     # print('Plotting')
     # (5, 3, 81, 91)
     # sns.set_style("whitegrid")
@@ -76,6 +77,9 @@ def plot_predictions(files_path_prefix: str,
         os.mkdir(files_path_prefix + f'videos/Forecast/{model_name}')
 
     days_prediction = Y_predict.shape[0]
+
+    if not os.path.exists(files_path_prefix + f'videos/Forecast/{model_name}/{days_prediction}_days'):
+        os.mkdir(files_path_prefix + f'videos/Forecast/{model_name}/{days_prediction}_days')
 
     Y_test[:, :, np.logical_not(mask)] = np.nan
     Y_predict[:, :, np.logical_not(mask)] = np.nan
@@ -199,12 +203,20 @@ def plot_predictions(files_path_prefix: str,
         else:
             fig.suptitle(f'{model_name}, Pressure', fontsize=30)
         plt.tight_layout()
-        if k == 0:
-            fig.savefig(files_path_prefix + f'videos/Forecast/{model_name}/{model_name}_{features_amount}_Flux_{day_str}.png')
-        elif k == 1:
-            fig.savefig(files_path_prefix + f'videos/Forecast/{model_name}/{model_name}_{features_amount}_SST_{day_str}.png')
+        if postfix_simple:
+            if k == 0:
+                fig.savefig(files_path_prefix + f'videos/Forecast/{model_name}/{days_prediction}_days/{model_name}_{features_amount}_Flux_{day_str}_simple.png')
+            elif k == 1:
+                fig.savefig(files_path_prefix + f'videos/Forecast/{model_name}/{days_prediction}_days/{model_name}_{features_amount}_SST_{day_str}_simple.png')
+            else:
+                fig.savefig(files_path_prefix + f'videos/Forecast/{model_name}/{days_prediction}_days/{model_name}_{features_amount}_press_{day_str}_simple.png')
         else:
-            fig.savefig(files_path_prefix + f'videos/Forecast/{model_name}/{model_name}_{features_amount}_press_{day_str}.png')
+            if k == 0:
+                fig.savefig(files_path_prefix + f'videos/Forecast/{model_name}/{days_prediction}_days/{model_name}_{features_amount}_Flux_{day_str}_informed.png')
+            elif k == 1:
+                fig.savefig(files_path_prefix + f'videos/Forecast/{model_name}/{days_prediction}_days/{model_name}_{features_amount}_SST_{day_str}_informed.png')
+            else:
+                fig.savefig(files_path_prefix + f'videos/Forecast/{model_name}/{days_prediction}_days/{model_name}_{features_amount}_press_{day_str}_informed.png')
         plt.close(fig)
     return
 

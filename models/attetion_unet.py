@@ -5,30 +5,6 @@ from torch.nn import init
 from config import cfg
 
 
-def init_weights(net, init_type='normal', gain=0.02):
-    def init_func(m):
-        classname = m.__class__.__name__
-        if hasattr(m, 'weight') and (classname.find('Conv') != -1 or classname.find('Linear') != -1):
-            if init_type == 'normal':
-                init.normal_(m.weight.data, 0.0, gain)
-            elif init_type == 'xavier':
-                init.xavier_normal_(m.weight.data, gain=gain)
-            elif init_type == 'kaiming':
-                init.kaiming_normal_(m.weight.data, a=0, mode='fan_in')
-            elif init_type == 'orthogonal':
-                init.orthogonal_(m.weight.data, gain=gain)
-            else:
-                raise NotImplementedError('initialization method [%s] is not implemented' % init_type)
-            if hasattr(m, 'bias') and m.bias is not None:
-                init.constant_(m.bias.data, 0.0)
-        elif classname.find('BatchNorm2d') != -1:
-            init.normal_(m.weight.data, 1.0, gain)
-            init.constant_(m.bias.data, 0.0)
-
-    print('initialize network with %s' % init_type)
-    net.apply(init_func)
-
-
 class up_conv(nn.Module):
     def __init__(self,ch_in,ch_out):
         super(up_conv,self).__init__()
@@ -123,6 +99,7 @@ class AttU_Net(nn.Module):
         self.Up_conv2 = conv_block(ch_in=128, ch_out=64)
 
         self.Conv_1x1 = nn.Conv2d(64, output_channel, kernel_size=kernel_size, stride=stride, padding=padding)
+        # self.Sigmoid = nn.Sigmoid()
 
     # def forward(self, x, m, layer_hiddens, encoder, decoder):
     def forward(self, x):
@@ -170,8 +147,5 @@ class AttU_Net(nn.Module):
         # output = torch.reshape(d1, (-1, cfg.out_len, cfg.features_amount, d1.shape[2], d1.shape[3]))
         output = torch.reshape(d1, (-1, cfg.out_len, 3, d1.shape[2], d1.shape[3]))
         output = output[:, :, :, 7:self.height + 7, 2:self.width + 2]
+        # return self.Sigmoid(output)
         return output
-        # next_layer_hiddens = []
-        # x = decoder(d1)
-        # decouple_loss = torch.zeros([cfg.LSTM_layers, cfg.batch, cfg.lstm_hidden_state]).cuda()
-        # return x, m, next_layer_hiddens, decouple_loss

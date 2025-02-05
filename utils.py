@@ -95,7 +95,11 @@ class Evaluation(object):
 
 def normalize_data_cuda(batch, min_vals, max_vals):
     for channel in range(3):
-        batch[:, :cfg.in_len + cfg.out_len, channel] = (batch[:, :cfg.in_len + cfg.out_len, channel] - min_vals[channel]) / (max_vals[channel] - min_vals[channel])
+        batch[:, :cfg.in_len + cfg.out_len, channel] = (batch[:, :cfg.in_len + cfg.out_len, channel] -
+                                                        min_vals[channel]) / (max_vals[channel] - min_vals[channel])
+        # normalize A
+        batch[:, :cfg.in_len + cfg.out_len, channel + 3] = (batch[:, :cfg.in_len + cfg.out_len, channel + 3] -
+                                                        min_vals[channel]) / (max_vals[channel] - min_vals[channel])
     # return batch.cuda()
     return batch
 
