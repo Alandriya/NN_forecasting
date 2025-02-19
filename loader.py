@@ -439,7 +439,7 @@ class Data2(Dataset):
         self.start_idx = start_idx
         self.end_idx = end_idx
 
-        self.flux_array = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_grouped_diff.npy')[start_idx:end_idx]
+        self.flux_array = np.load(cfg.root_path + f'DATA/FLUX_1979-2025_grouped_diff.npy')[start_idx:end_idx]
         self.sst_array = np.load(cfg.root_path + f'DATA/SST_1979-2025_grouped_diff.npy')[start_idx:end_idx]
         self.press_array = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_grouped_diff.npy')[start_idx:end_idx]
         np.nan_to_num(self.flux_array, copy=False)
@@ -450,16 +450,16 @@ class Data2(Dataset):
         self.sst_quantiles = np.load(cfg.root_path + f'DATA/SST_1979-2025_diff_quantiles.npy')
         self.press_quantiles = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_diff_quantiles.npy')
 
-        self.flux_mean_year = np.load(cfg.root_path + f'DATA/FLUX_mean_year_diff.npy')
-        self.sst_mean_year = np.load(cfg.root_path + f'DATA/SST_mean_year_diff.npy')
-        self.press_mean_year = np.load(cfg.root_path + f'DATA/PRESS_mean_year_diff.npy')
-        np.nan_to_num(self.flux_mean_year, copy=False)
-        np.nan_to_num(self.sst_mean_year, copy=False)
-        np.nan_to_num(self.press_mean_year, copy=False)
+        # self.flux_mean_year = np.load(cfg.root_path + f'DATA/FLUX_mean_year_diff.npy')
+        # self.sst_mean_year = np.load(cfg.root_path + f'DATA/SST_mean_year_diff.npy')
+        # self.press_mean_year = np.load(cfg.root_path + f'DATA/PRESS_mean_year_diff.npy')
+        # np.nan_to_num(self.flux_mean_year, copy=False)
+        # np.nan_to_num(self.sst_mean_year, copy=False)
+        # np.nan_to_num(self.press_mean_year, copy=False)
 
-        self.flux_scaled = np.load(cfg.root_path + f'DATA/FLUX_1979-2025_grouped_diff_scaled.npy')[start_idx:end_idx]
-        self.sst_scaled = np.load(cfg.root_path + f'DATA/SST_1979-2025_grouped_diff_scaled.npy')[start_idx:end_idx]
-        self.press_scaled = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_grouped_diff_scaled.npy')[start_idx:end_idx]
+        # self.flux_scaled = np.load(cfg.root_path + f'DATA/FLUX_1979-2025_grouped_diff_scaled.npy')[start_idx:end_idx]
+        # self.sst_scaled = np.load(cfg.root_path + f'DATA/SST_1979-2025_grouped_diff_scaled.npy')[start_idx:end_idx]
+        # self.press_scaled = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_grouped_diff_scaled.npy')[start_idx:end_idx]
 
         self.eigen_flux = None
         self.eigen_sst = None
