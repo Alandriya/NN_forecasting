@@ -1,3 +1,4 @@
+import numpy as np
 from torch import nn
 import torch
 from config import cfg
@@ -61,11 +62,11 @@ class Loss_MSE(nn.Module):
         super().__init__()
         pass
 
-    def forward(self, truth, pred):
+    def forward(self, truth, pred, mask):
         # print(truth.shape)
         # print(pred.shape)
         differ = truth - pred  # b s c h w
-        # print(differ)
+        differ[:, :, :, np.where(mask == 0)[0], np.where(mask == 0)[1]] = 0
         mse = torch.sum(differ ** 2, (2, 3, 4))  # b s
         mse = torch.mean(mse)  # 1
         return mse
@@ -76,12 +77,13 @@ class Loss_MSE_eigenvalues(nn.Module):
         super().__init__()
         pass
 
-    def forward(self, truth, pred, eigens, alpha = 0.0):
+    def forward(self, truth, pred, mask, eigens, alpha = 0.0):
         # print(truth.shape)
         # print(pred.shape)
         # print(eigens.shape)
 
         differ = truth - pred  # b s c h w
+        differ[:, :, :, np.where(mask == 0)[0], np.where(mask == 0)[1]] = 0
         # mse = torch.sum(differ ** 2, (2, 3, 4))
         tmp = (differ ** 2) * (1-alpha) + eigens * alpha
         # print(torch.sum(tmp-differ**2))
