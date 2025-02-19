@@ -17,127 +17,159 @@ SHORT_POSTFIX = ''
 files_path_prefix = 'E:/Nastya/Data/OceanFull/'
 from config import cfg
 import copy
-
+from loader import Data2
+import torch
+from torch import nn
+from model import Model
+# from models.encoder_decoder import Encoder_Decoder
+from models.attetion_unet import AttU_Net
+from models.dense_unet import DenseU_Net
+from loss import *
+import numpy as np
+from torch.utils.data import DataLoader
+from torch.utils.data.distributed import DistributedSampler
+from loader import count_offset, load_mask, create_dataloaders
+import argparse
+from collections import OrderedDict
+from utils import *
+from plotter import plot_train_loss, plot_predictions
+from utils import normalize_data_cuda
+from loader import scale_to_bins, load_np_data, Data2
+os.environ["CUDA_VISIBLE_DEVICES"] = cfg.gpu
 
 if __name__ == '__main__':
     np.set_printoptions(threshold=sys.maxsize)
-    # --------------------------------------------------------------------------------
-    # Mask
-    maskfile = open(files_path_prefix + "mask", "rb")
-    binary_values = maskfile.read(29141)
-    maskfile.close()
-    mask = unpack('?' * 29141, binary_values)
-    mask = np.array(mask, dtype=int)
-    mask = mask.reshape((161, 181))[::2, ::2]
-    print(np.sum(mask))
-    # print(cfg.batch)
-    # ---------------------------------------------------------------------------------------
-    # Days deltas
-    days_delta1 = (datetime.datetime(1989, 1, 1, 0, 0) - datetime.datetime(1979, 1, 1, 0, 0)).days
-    days_delta2 = (datetime.datetime(1999, 1, 1, 0, 0) - datetime.datetime(1989, 1, 1, 0, 0)).days
-    days_delta3 = (datetime.datetime(2009, 1, 1, 0, 0) - datetime.datetime(1999, 1, 1, 0, 0)).days
-    days_delta4 = (datetime.datetime(2019, 1, 1, 0, 0) - datetime.datetime(2009, 1, 1, 0, 0)).days
-    days_delta5 = (datetime.datetime(2024, 1, 1, 0, 0) - datetime.datetime(2019, 1, 1, 0, 0)).days
-    days_delta6 = (datetime.datetime(2024, 4, 28, 0, 0) - datetime.datetime(2019, 1, 1, 0, 0)).days
-    # ----------------------------------------------------------------------------------------------
-    start_year = 2019
-    if start_year == 2019:
-        end_year = 2025
-    else:
-        end_year = start_year + 10
+    fix_random(2024)
+    mask = load_mask(cfg.root_path)
 
-    offset = days_delta1 + days_delta2 + days_delta3 + days_delta4
+    LR = cfg.LR
+    parser = argparse.ArgumentParser()
+    start_year = 1979
+    end_year, offset = count_offset(start_year)
+
     # ---------------------------------------------------------------------------------------
     # configs
     width = 91
     height = 81
     batch_size = cfg.batch
-    days_known = 7
-    days_prediction = 5
+    cfg.in_len = 7
+    cfg.out_len = 10
     features_amount = 6
+
+
+    # parallel group
+    torch.distributed.init_process_group(backend="gloo")
+    threads = cfg.dataloader_thread
+
+
     # ---------------------------------------------------------------------------------------
-    x_train = torch.load(files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_x_train_{features_amount}{SHORT_POSTFIX}.pt')
-    y_train = torch.load(files_path_prefix + f'Forecast/Train/{start_year}-{end_year}_y_train_{features_amount}{SHORT_POSTFIX}.pt')
+    # create train and test dataloaders, train from 01.01.1979 to 01.01.2024, test from 01.01.2024 to 28.11.2024
+    days_delta1 = (datetime.datetime(2024, 1, 1, 0, 0) - datetime.datetime(1979, 1, 1, 0, 0)).days
+    days_delta2 = (datetime.datetime(2024, 11, 28, 0, 0) - datetime.datetime(2024, 1, 1, 0, 0)).days
+    train_data = Data2(cfg, 0, days_delta1)
+    test_data = Data2(cfg, days_delta1, days_delta1 - cfg.in_len - cfg.out_len + days_delta2)
 
-    x_test = torch.load(files_path_prefix + f'Forecast/Test/{start_year}-{end_year}_x_test_{features_amount}{SHORT_POSTFIX}.pt')
-    y_test = torch.load(files_path_prefix + f'Forecast/Test/{start_year}-{end_year}_y_test_{features_amount}{SHORT_POSTFIX}.pt')
+    test_sampler = DistributedSampler(test_data, shuffle=False)
+    test_loader = DataLoader(test_data, num_workers=threads, batch_size=cfg.batch, shuffle=False, pin_memory=True,
+                             sampler=test_sampler)
+    criterion_MSE = Loss_MSE().cuda()
 
-    min_vals = torch.amin(y_train, dim=(0, 1, 2, 3)).numpy()
-    max_vals = torch.amax(y_train, dim=(0, 1, 2, 3)).numpy()
-    # print(min_vals)
-    # print(max_vals)
-
-    x_train = torch.permute(x_train, dims=(0, 3, 4, 1, 2)).numpy()
-    y_train = torch.permute(y_train, dims=(0, 3, 4, 1, 2)).numpy()
-    x_test = torch.permute(x_test, dims=(0, 3, 4, 1, 2)).numpy()
-    y_test = torch.permute(y_test, dims=(0, 3, 4, 1, 2)).numpy()
-    y_test_copy = copy.deepcopy(y_test)
-
-    for k in range(3):
-        x_train[:, :, k] = (x_train[:, :, k] - min_vals[k]) / (max_vals[k] - min_vals[k])
-        y_train[:, :, k] = (y_train[:, :, k] - min_vals[k]) / (max_vals[k] - min_vals[k])
-        x_test[:, :, k] = (x_test[:, :, k] - min_vals[k]) / (max_vals[k] - min_vals[k])
-        y_test[:, :, k] = (y_test[:, :, k] - min_vals[k]) / (max_vals[k] - min_vals[k])
-
-    print(x_train.shape)
-    # mse = 0
-    # mae = 0
-    # ssim_arr = np.zeros((batch_size, days_prediction, 3))
-    # # get dumb prediction and plot it
-    # for t in range(batch_size):
-    #     y_pred = np.zeros((days_prediction, 3, height, width))
-    #     y_pred[:, :, np.logical_not(mask)] = 0
-    #     for t1 in range(days_prediction):
-    #         y_pred[t1] = np.mean(y_train[t], axis=0)[:3]
-    #         for k in range(3):
-    #             ssim_arr[t, t1, k] = ssim(y_pred[t1, k], y_test[t, t1, k])
+    # with ((torch.no_grad())):
+    #     ssim_flux = 0.0
+    #     ssim_sst = 0.0
+    #     ssim_press = 0.0
+    #     mse_flux = 0.0
+    #     mse_sst = 0.0
+    #     mse_press = 0.0
+    #     amount = 0
+    #     for idx, test_batch in enumerate(test_loader):
+    #         print(f'batch {idx}')
+    #         test_batch = normalize_data_cuda(test_batch, cfg.min_vals, cfg.max_vals)
+    #         input = test_batch[:, :cfg.in_len, :3].clone()
+    #         # print(input[0])
+    #         # print('\n\n')
+    #         test_pred_values = torch.zeros((input.shape[0], cfg.out_len, 3, input.shape[3], input.shape[4]))
+    #         for i in range(3):
+    #             test_pred_values[:, :, i] = torch.mean(input[:, :, i])
     #
-    #     start_day = datetime.datetime(2019, 1, 1) + datetime.timedelta(days=x_train.shape[0] + t)
-    #     mse += np.sum((y_pred - y_test[t]) ** 2)
-    #     mae += np.sum(np.abs(y_pred-y_test[t]))
-    #     # print(start_day)
-    #     for k in range(3):
-    #         y_pred[:, k] = y_pred[:, k] * (max_vals[k] - min_vals[k]) + min_vals[k]
-    #     plot_predictions(files_path_prefix, y_test_copy[t], y_pred, 'Dumb', features_amount, start_day, mask, cfg)
+    #         loss_simple = criterion_MSE(test_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, :3],
+    #                                     test_pred_values[:, :, :3])
+    #         prediction = test_pred_values[:, :, :3]
+    #         truth = test_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, :3]
+    #         truth = truth.cpu().numpy()
+    #         prediction = prediction.cpu().numpy()
+    #         ssim = get_SSIM(prediction, truth, mask)
+    #         ssim_arr = np.mean(ssim, axis=(0, 1))
+    #         # print(ssim_arr)
+    #         ssim_flux += ssim_arr[0]
+    #         ssim_sst += ssim_arr[1]
+    #         ssim_press += ssim_arr[2]
     #
-    # print(f'Test SSIM DUMB: {np.mean(ssim_arr, axis=(0, 1))}')
-    # mse = mse/np.sum(mask)/batch_size/3/cfg.out_len
-    # mae = mae/np.sum(mask)/batch_size/3/cfg.out_len
-    # print(f'Test MSE DUMB: {mse:.5f}')
-    # print(f'Test MAE DUMB: {mae:.5f}')
-
-    ssim_arr = np.zeros((batch_size, days_prediction, 3))
-    mse = 0
-    mae = 0
-    # get regression prediction and plot it
-    for t in range(batch_size):
-        y_pred = np.zeros((days_prediction, 3, height, width), dtype=float)
-        for k in range(3):
-            for i in range(height):
-                for j in range(width):
-                    if mask[i, j]:
-                        regr = linear_model.LinearRegression()
-                        x_tmp = x_train[:, -days_prediction:, :, i, j].reshape((-1, features_amount))
-                        y_tmp = y_train[:, -days_prediction:, k, i, j].flatten()
-                        # print(x_tmp.shape)
-                        # print(y_tmp.shape)
-                        regr.fit(x_tmp, y_tmp)
-                        y_pred[:, k, i, j] = regr.predict(x_test[0:1, -days_prediction:, :, i, j].reshape((-1, features_amount)))
-        start_day = datetime.datetime(2019, 1, 1) + datetime.timedelta(days=x_train.shape[0] + t)
-        mse += np.sum((y_pred - y_test[t][:, :3]) ** 2)
-        mae += np.sum(np.abs(y_pred-y_test[t][:, :3]))
-        y_pred[:, :, np.logical_not(mask)] = 0
-        # for t1 in range(days_prediction):
-        #     for k in range(3):
-        #         ssim_arr[t, t1, k] = ssim(y_pred[t1, k], y_test[t, t1, k])
-
-        for k in range(3):
-            y_pred[:, k] = y_pred[:, k] * (max_vals[k] - min_vals[k]) + min_vals[k]
-        plot_predictions(files_path_prefix, y_test_copy[t][:, :3], y_pred, 'Linear regression', features_amount, start_day, mask, cfg)
+    #         mse_arr = (prediction - truth)**2 # b s c h w
+    #         mse_arr = np.sum(mse_arr, axis=(0, 1, 3, 4))
+    #         mse_flux += mse_arr[0]
+    #         mse_sst += mse_arr[1]
+    #         mse_press += mse_arr[2]
+    #
+    #
+    #         amount += 1
+    #
+    # print(f'DUMB SSIM flux = {ssim_flux / amount:.4f}')
+    # print(f'DUMB SSIM sst = {ssim_sst / amount:.4f}')
+    # print(f'DUMB SSIM press = {ssim_press / amount:.4f}')
+    # print(f'DUMB MSE flux = {mse_flux / amount:.4f}')
+    # print(f'DUMB MSE sst = {mse_sst / amount:.4f}')
+    # print(f'DUMB MSE press = {mse_press / amount:.4f}')
 
 
-    # mse = mse/np.sum(mask)/batch_size/3/cfg.out_len
-    # mae = mae/np.sum(mask)/batch_size/3/cfg.out_len
-    # print(f'Test MSE regression: {mse:.5f}')
-    # print(f'Test MAE regression: {mae:.5f}')
-    # print(f'Test SSIM regression: {np.mean(ssim_arr, axis=(0, 1))}')
+    with ((torch.no_grad())):
+        ssim_flux = 0.0
+        ssim_sst = 0.0
+        ssim_press = 0.0
+        mse_flux = 0.0
+        mse_sst = 0.0
+        mse_press = 0.0
+        amount = 0
+        for idx, test_batch in enumerate(test_loader):
+            print(f'batch {idx}')
+            test_batch = normalize_data_cuda(test_batch, cfg.min_vals, cfg.max_vals)
+            input = test_batch[:, :cfg.in_len, :3].clone()
+            # print(input[0])
+            # print('\n\n')
+            test_pred_values = torch.zeros((input.shape[0], cfg.out_len, 3, input.shape[3], input.shape[4]))
+            t_in = [m for m in range(1, cfg.in_len + 1)]
+            t_out = [m for m in range(cfg.in_len + 1, cfg.in_len + 1 + cfg.out_len)]
+            for b in range(test_batch.shape[0]):
+                for i in range(3):
+                    x = input[b, :, i].cpu().numpy()
+                    # print(x.shape)
+                    for p1 in range(81):
+                        for p2 in range(91):
+                            fit = np.polyfit(t_in, x[:, p1, p2], 3)
+                            line = np.poly1d(fit)
+                            test_pred_values[b, :, i, p1, p2] = torch.tensor(line(t_out))
+
+            loss_simple = criterion_MSE(test_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, :3],
+                                        test_pred_values[:, :, :3], mask)
+            prediction = test_pred_values[:, :, :3]
+            truth = test_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, :3]
+            truth = truth.cpu().numpy()
+            prediction = prediction.cpu().numpy()
+            ssim = get_SSIM(prediction, truth, mask)
+            ssim_arr = np.mean(ssim, axis=(0, 1))
+            # print(ssim_arr)
+            ssim_flux += ssim_arr[0]
+            ssim_sst += ssim_arr[1]
+            ssim_press += ssim_arr[2]
+
+            mse_arr = (prediction - truth)**2 # b s c h w
+            mse_arr = np.sum(mse_arr, axis=(0, 1, 3, 4))
+            mse_flux += mse_arr[0]
+            mse_sst += mse_arr[1]
+            mse_press += mse_arr[2]
+
+            amount += 1
+
+    print(f'polynom SSIM flux = {ssim_flux / amount:.4f}')
+    print(f'polynom SSIM sst = {ssim_sst / amount:.4f}')
+    print(f'polynom SSIM press = {ssim_press / amount:.4f}')
