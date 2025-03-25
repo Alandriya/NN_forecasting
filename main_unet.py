@@ -3,6 +3,7 @@
 import datetime
 import os
 
+# from networkx.algorithms.threshold import eigenvalues
 from sympy.physics.units import amount
 from config import cfg
 
@@ -66,13 +67,19 @@ if __name__ == '__main__':
     # criterion_simple = True
     criterion = Loss_MSE_informed().cuda()
     criterion_simple = False
+    alpha = 0.4
+    beta = 0
 
-    alpha = 0.64
-    beta = 0.32
-    model_load_path =  cfg.GLOBAL.MODEL_LOG_SAVE_PATH + f'/models/days_{cfg.out_len}_simple.pth'
+
+    if criterion_simple:
+        criterion = criterion_MSE
+
+    model_load_path = cfg.GLOBAL.MODEL_LOG_SAVE_PATH + f'/models/days_{cfg.out_len}_simple.pth'
     # model_save_path = model_load_path
-    model_save_path = cfg.GLOBAL.MODEL_LOG_SAVE_PATH + f'/models/days_{cfg.out_len}_epoch_{cfg.epoch}_alpha_{int(alpha*10)}_beta_{int(beta*10)}.pth'
+    model_save_path = cfg.GLOBAL.MODEL_LOG_SAVE_PATH + f'/models/days_{cfg.out_len}_simple_alpha_{int(alpha*100)}.pth'
     # model_load_path = model_save_path
+    if cfg.nn_mode == 'test':
+        model_load_path = model_save_path
     model = model.cuda()
     model = nn.parallel.DistributedDataParallel(model, find_unused_parameters=False)
 
@@ -117,12 +124,14 @@ if __name__ == '__main__':
                 input = input.cuda()
                 train_pred = model(input)
                 if criterion_simple:
-                    loss = criterion(train_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, :3], train_pred[:, :, :3])
+                    loss = criterion_MSE(train_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, :3], train_pred[:, :, :3], mask)
                 else:
+                    eigenvalues = train_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, 12:18, 0, 0]
+                    # print(torch.unique(train_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, 12:18], sorted=False))
                     loss = criterion(train_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, :3],
-                              train_pred[:, :, :3], train_batch[:, :cfg.out_len, 3:], alpha, beta)
+                              train_pred[:, :, :3], train_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, 3:], mask, alpha, beta, eigenvalues)
                     loss_simple = criterion_MSE(train_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, :3],
-                              train_pred[:, :, :3])
+                              train_pred[:, :, :3], mask)
                 loss.backward()
                 optimizer.step()
                 loss = reduce_tensor(loss)  # all reduce
@@ -137,8 +146,8 @@ if __name__ == '__main__':
                 else:
                     print(f'Loss, alpha = {alpha}: {epoch_loss}', flush=True)
                     print(f'Loss MSE: {epoch_loss_simple}\n', flush=True)
-            alpha /= 2
-            beta /= 2
+            alpha *= 0.9
+            # beta /= 2
 
         if is_master_proc():
             np.save(cfg.root_path + f'Losses/loss_{cfg.model_name}_{cfg.start_year}_alpha_{int(alpha*10)}.npy', train_loss)
@@ -170,6 +179,9 @@ if __name__ == '__main__':
                 ssim_flux = 0.0
                 ssim_sst = 0.0
                 ssim_press = 0.0
+                mse_flux = 0.0
+                mse_sst = 0.0
+                mse_press = 0.0
                 mse = 0.0
                 amount = 0
                 for idx, test_batch in enumerate(test_loader):
@@ -181,11 +193,12 @@ if __name__ == '__main__':
                     test_pred_values = model(input)
                     # test_pred_values = model(test_batch[:, :cfg.in_len, :3])
                     if criterion_simple:
-                        loss = criterion(test_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, :3], test_pred_values[:, :, :3])
+                        loss_simple = loss = criterion(test_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, :3], test_pred_values[:, :, :3], mask)
                     else:
+                        eigenvalues = test_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, 12:18, 0, 0]
                         loss = criterion(test_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, :3],
-                                     test_pred_values[:, :, :3], test_batch[:, :cfg.out_len, 3:], alpha, beta)
-                        loss_simple = criterion_MSE(test_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, :3], test_pred_values[:, :, :3])
+                                     test_pred_values[:, :, :3], test_batch[:, :cfg.out_len, 3:], mask, alpha, beta, eigenvalues)
+                        loss_simple = criterion_MSE(test_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, :3], test_pred_values[:, :, :3], mask)
 
                     mse += loss_simple.item()
                     test_batch_scaled = test_batch.clone().detach()
@@ -199,6 +212,12 @@ if __name__ == '__main__':
                     ssim_flux += ssim_arr[0]
                     ssim_sst += ssim_arr[1]
                     ssim_press += ssim_arr[2]
+
+                    mse_arr = (prediction - truth[:, :, :3]) ** 2  # b s c h w
+                    mse_arr = np.sum(mse_arr, axis=(0, 1, 3, 4))
+                    mse_flux += mse_arr[0]
+                    mse_sst += mse_arr[1]
+                    mse_press += mse_arr[2]
 
                     amount += 1
 
@@ -216,12 +235,12 @@ if __name__ == '__main__':
                     print(tuple(torch.amin(test_pred_values[:, :, :3], dim=(0, 1, 3, 4))))
                     print(tuple(torch.amax(test_pred_values[:, :, :3], dim=(0, 1, 3, 4))))
 
-                    if criterion_simple:
-                        loss_values = criterion(test_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, :3],
-                                                test_pred_values[:, :, :3])
-                    else:
-                        loss_values = criterion(test_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, :3],
-                                  test_pred_values[:, :, :3], test_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, 3:6])
+                    # if criterion_simple:
+                    #     loss_values = criterion(test_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, :3],
+                    #                             test_pred_values[:, :, :3], mask)
+                    # else:
+                    #     loss_values = criterion(test_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, :3],
+                    #               test_pred_values[:, :, :3], test_batch[:, cfg.in_len:cfg.in_len + cfg.out_len, 3:], mask, alpha, beta)
 
                     differ = test_batch_scaled[:, cfg.in_len:cfg.in_len + cfg.out_len, :3] - test_pred_values
                     loss_divided = torch.mean(torch.sum(differ ** 2, (3, 4)), (0, 1))
@@ -233,9 +252,13 @@ if __name__ == '__main__':
                             test_pred_numpy = test_pred_values[i, :, :3].cpu().numpy()
                             plot_predictions(cfg.root_path, test_batch_numpy[cfg.in_len:cfg.in_len + cfg.out_len],
                                              test_pred_numpy, cfg.model_name,
-                                             cfg.features_amount, day, mask, cfg, postfix_simple=False)
+                                             cfg.features_amount, day, mask, cfg, postfix_simple=criterion_simple)
                         # break
             print(f'SSIM flux = {ssim_flux/amount:.4f}')
             print(f'SSIM sst = {ssim_sst / amount:.4f}')
             print(f'SSIM press = {ssim_press/ amount:.4f}')
-            print(f'MSE = {mse / amount}')
+            print('\n')
+            print(f'MSE flux = {mse_flux / amount:.4f}')
+            print(f'MSE sst = {mse_sst / amount:.4f}')
+            print(f'MSE press = {mse_press / amount:.4f}')
+            # print(f'MSE = {mse / amount}')

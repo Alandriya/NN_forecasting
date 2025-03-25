@@ -94,13 +94,40 @@ class Evaluation(object):
 
 
 def normalize_data_cuda(batch, min_vals, max_vals):
+    # print(max_vals)
+    # print(min_vals)
+    # print('\n\n')
+    # for i in range(3, 9):
+    #     print(i)
+    #     print(torch.max(batch[:, :, i]))
+    #     print(torch.min(batch[:, :, i]))
+
     for channel in range(3):
         batch[:, :cfg.in_len + cfg.out_len, channel] = (batch[:, :cfg.in_len + cfg.out_len, channel] -
                                                         min_vals[channel]) / (max_vals[channel] - min_vals[channel])
         # normalize A
         batch[:, :cfg.in_len + cfg.out_len, channel + 3] = (batch[:, :cfg.in_len + cfg.out_len, channel + 3] -
-                                                        min_vals[channel]) / (max_vals[channel] - min_vals[channel])
+                                                            min_vals[channel]) / (max_vals[channel] - min_vals[channel])
+
+        if cfg.features_amount == 9:
+            # normalize B
+                batch[:, :cfg.in_len + cfg.out_len, channel + 6] = (batch[:, :cfg.in_len + cfg.out_len, channel + 6] -
+                                                                (min_vals[channel])) / ((max_vals[channel] - min_vals[channel]))
+
+        #
+        # # normalize eigenvalues
+        # batch[:, :cfg.in_len + cfg.out_len, channel + 9 + channel*2] = (batch[:, :cfg.in_len + cfg.out_len, channel*2 + 9] -
+        #                                                 min_vals[channel]) / (max_vals[channel] - min_vals[channel])
+        # batch[:, :cfg.in_len + cfg.out_len, channel + 10 + channel*2] = (batch[:, :cfg.in_len + cfg.out_len, channel*2 + 10] -
+        #                                                 min_vals[channel]) / (max_vals[channel] - min_vals[channel])
+
     # return batch.cuda()
+    # print('\n\n')
+    # for i in range(3, 18):
+    #     print(i)
+    #     print(torch.max(batch[:, :, i]))
+    #     print(torch.min(batch[:, :, i]))
+    # raise ValueError
     return batch
 
 

@@ -47,11 +47,11 @@ class OrderedEasyDict(OrderedDict):
 cfg = OrderedEasyDict()
 
 cfg.start_year = 1979
-cfg.features_amount = 9
+cfg.features_amount = 21
 # ConvLSTM  MS-LSTM  Att-Unet
 # cfg.model_name = 'Transformer'
-cfg.model_name = 'Attention U-net labels'
-cfg.nn_mode = 'train'
+cfg.model_name = 'Attention U-net'
+cfg.nn_mode = 'test'
 
 cfg.bins = 100
 cfg.LOAD_MODEL = True
@@ -74,7 +74,7 @@ cfg.height = 81
 cfg.in_len = 7
 cfg.out_len = 5
 cfg.epoch = 100
-flux_quantiles = np.load(files_path_prefix + f'DATA/PRESS_1979-2025_diff_quantiles.npy')
+flux_quantiles = np.load(files_path_prefix + f'DATA/FLUX_1979-2025_diff_quantiles.npy')
 sst_quantiles = np.load(files_path_prefix + f'DATA/SST_1979-2025_diff_quantiles.npy')
 press_quantiles = np.load(files_path_prefix + f'DATA/PRESS_1979-2025_diff_quantiles.npy')
 

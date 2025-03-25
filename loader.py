@@ -479,7 +479,16 @@ class Data2(Dataset):
             np.nan_to_num(self.A_sst, copy=False)
             np.nan_to_num(self.A_press, copy=False)
 
-        if cfg.features_amount == 12:
+        if self.features_amount == 9:
+            self.B_flux = np.load(cfg.root_path + f'DATA/FLUX_1979-2025_b_coeff.npy')[start_idx:end_idx]
+            self.B_sst = np.load(cfg.root_path + f'DATA/SST_1979-2025_b_coeff.npy')[start_idx:end_idx]
+            self.B_press = np.load(cfg.root_path + f'DATA/PRESS_1979-2025_b_coeff.npy')[start_idx:end_idx]
+
+            np.nan_to_num(self.B_flux, copy=False)
+            np.nan_to_num(self.B_sst, copy=False)
+            np.nan_to_num(self.B_press, copy=False)
+
+        if cfg.features_amount >= 12:
             self.eigen_flux = np.load(cfg.root_path + f'DATA/FLUX_FLUX_1979-2025_eigen0.npy')[start_idx:end_idx]
             self.eigen_sst = np.load(cfg.root_path + f'DATA/SST_SST_1979-2025_eigen0.npy')[start_idx:end_idx]
             self.eigen_press = np.load(cfg.root_path + f'DATA/PRESS_PRESS_1979-2025_eigen0.npy')[start_idx:end_idx]
@@ -495,6 +504,8 @@ class Data2(Dataset):
             np.nan_to_num(self.eigen_flux_sst, copy=False)
             np.nan_to_num(self.eigen_flux_press, copy=False)
             np.nan_to_num(self.eigen_sst_press, copy=False)
+        if self.features_amount >= 18:
+            self.eigenvalues = np.load(cfg.root_path + f'DATA/EIGENVALUES_1979-2025.npy')
 
     def __getitem__(self, index):
         sample = np.zeros((self.in_len + self.out_len, self.features_amount, self.height, self.width), dtype=float)
@@ -509,20 +520,36 @@ class Data2(Dataset):
 
         # A and eigens are used from future to go into loss
         if self.features_amount >= 6:
-            for day in range(self.out_len):
-                sample[day, 3] = self.A_flux[index + self.in_len + day]
-                sample[day, 4] = self.A_sst[index + self.in_len + day]
-                sample[day, 5] = self.A_press[index + self.in_len + day]
+            for day in range(self.in_len + self.out_len):
+                sample[day, 3] = self.A_flux[index + day]
+                sample[day, 4] = self.A_sst[index + day]
+                sample[day, 5] = self.A_press[index + day]
 
-        if self.features_amount == 12:
-            for day in range(self.out_len):
-                sample[day, 6] = self.eigen_flux[index + self.in_len + day]
-                sample[day, 7] = self.eigen_sst[index + self.in_len + day]
-                sample[day, 8] = self.eigen_press[index + self.in_len + day]
+        if self.features_amount == 9:
+            for day in range(self.in_len + self.out_len):
+                sample[day, 6] = self.B_flux[index + day]
+                sample[day, 7] = self.B_sst[index + day]
+                sample[day, 8] = self.B_press[index + day]
 
-                sample[day, 9] = self.eigen_flux_sst[index + self.in_len + day]
-                sample[day, 10] = self.eigen_flux_press[index + self.in_len + day]
-                sample[day, 11] = self.eigen_sst_press[index + self.in_len + day]
+        if self.features_amount >= 12:
+            for day in range(self.in_len + self.out_len):
+                sample[day, 6] = self.eigen_flux[index + day]
+                sample[day, 7] = self.eigen_sst[index + day]
+                sample[day, 8] = self.eigen_press[index + day]
+
+                sample[day, 9] = self.eigen_flux_sst[index + day]
+                sample[day, 10] = self.eigen_flux_press[index + day]
+                sample[day, 11] = self.eigen_sst_press[index + day]
+
+        if self.features_amount >= 18:
+            for day in range(self.in_len + self.out_len):
+                sample[day, 12] = self.eigenvalues[index + day, 0]
+                sample[day, 13] = self.eigenvalues[index + day, 1]
+                sample[day, 14] = self.eigenvalues[index + day, 2]
+                sample[day, 15] = self.eigenvalues[index + day, 3]
+                sample[day, 16] = self.eigenvalues[index + day, 4]
+                sample[day, 17] = self.eigenvalues[index + day, 5]
+
         # elif self.features_amount == 9:
         #     for day in range(self.in_len + self.out_len):
         #         sample[day, 3] = self.eigen_flux[index + day]

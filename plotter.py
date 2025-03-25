@@ -148,8 +148,12 @@ def plot_predictions(files_path_prefix: str,
         cax = [[None for _ in range(days_prediction)] for _ in range(3)]
         if k == 0:
             cmap_test = cmap_pred = copy.deepcopy(cmap_flux)
-            test_min = pred_min = flux_min
-            test_max = pred_max = flux_max
+            # test_min = pred_min = flux_min
+            # test_max = pred_max = flux_max
+            test_min = np.nanmin(Y_test[:, 0])
+            test_max = np.nanmax(Y_test[:, 0])
+            pred_min = np.nanmin(Y_predict[:, 0])
+            pred_max = np.nanmax(Y_predict[:, 0])
         elif k == 1:
             cmap_test = cmap_pred = copy.deepcopy(cmap_sst)
             test_min = pred_min = sst_min
@@ -297,4 +301,127 @@ def plot_train_loss(files_path_prefix, loss_arr, start_year, end_year, model_nam
     plt.xlabel('Iteration')
     plt.tight_layout()
     fig.savefig(files_path_prefix + f'videos/Forecast/Loss/{model_name}_{start_year}-{end_year}.png')
+    return
+
+
+def plot_flux_sst_press(files_path_prefix: str,
+                        flux: np.ndarray,
+                        sst: np.ndarray,
+                        press: np.ndarray,
+                        start: int,
+                        end: int,
+                        start_date: datetime.datetime = datetime.datetime(1979, 1, 1, 0, 0),
+                        start_pic_num: int = 1,
+                        frequency: int = 1,
+                        ):
+    sns.set_style("whitegrid")
+
+    # if not os.path.exists(files_path_prefix + f'videos/3D/flux-sst-press/hourly'):
+    #     os.mkdir(files_path_prefix + f'videos/3D/flux-sst-press/hourly')
+
+    if not os.path.exists(files_path_prefix + f'videos/3D/flux-sst-press/correlations'):
+        os.mkdir(files_path_prefix + f'videos/3D/flux-sst-press/correlations')
+
+    if not os.path.exists(files_path_prefix + f'videos/3D/flux-sst-press/correlations/{frequency}'):
+        os.mkdir(files_path_prefix + f'videos/3D/flux-sst-press/correlations/{frequency}')
+
+    fig, axs = plt.subplots(1, 3, figsize=(15, 5))
+    img_flux, img_sst, img_press = None, None, None
+
+    flux_max = np.nanmax(flux)
+    flux_min = np.nanmin(flux)
+    sst_max = np.nanmax(sst)
+    sst_min = np.nanmin(sst)
+    press_max = np.nanmax(press)
+    press_min = np.nanmin(press)
+
+    # cmap_flux = plt.get_cmap('Blues').copy()
+    # cmap_flux = get_continuous_cmap(['#000080', '#ffffff', '#ff0000'], [0, (1.0 - flux_min) / (flux_max - flux_min), 1])
+    cmap_flux =cmap_sst = cmap_press = get_continuous_cmap(['#000080', '#ffffff', '#ff0000'], [0, 0.5, 1])
+    cmap_flux.set_bad('lightgreen', 1.0)
+    # cmap_sst = get_continuous_cmap(['#ffffff', '#ff0000'], [0, 1])
+    # cmap_sst = plt.get_cmap('Reds').copy()
+    cmap_sst.set_bad('lightgreen', 1.0)
+    # cmap_press = get_continuous_cmap(['#ffffff', '#ff0000'], [0, 1])
+    # cmap_press = plt.get_cmap('Purples').copy()
+    cmap_press.set_bad('lightgreen', 1.0)
+
+    # axs[0].set_title(f'Sum flux', fontsize=20)
+    axs[0].set_title(f'Flux-SST', fontsize=20)
+    divider = make_axes_locatable(axs[0])
+    cax_flux = divider.append_axes('right', size='5%', pad=0.3)
+
+    # axs[1].set_title(f'SST', fontsize=20)
+    axs[1].set_title(f'SST-Pressure', fontsize=20)
+    divider = make_axes_locatable(axs[1])
+    cax_sst = divider.append_axes('right', size='5%', pad=0.3)
+
+    # axs[2].set_title(f'Pressure', fontsize=20)
+    axs[2].set_title(f'Flux-Pressure', fontsize=20)
+    divider = make_axes_locatable(axs[2])
+    cax_press = divider.append_axes('right', size='5%', pad=0.3)
+
+    x_label_list = ['90W', '60W', '30W', '0']
+    y_label_list = ['EQ', '30N', '60N', '80N']
+    # xticks = [0, 60, 120, 180]
+    # yticks = [160, 100, 40, 0]
+    xticks = [0, 30, 60, 90]
+    yticks = [80, 50, 20, 0]
+
+    pic_num = start_pic_num
+    for t in tqdm.tqdm(range(start, end)):
+        # if frequency == 1:
+        date = start_date + datetime.timedelta(days=(t - start))
+        date2 = date + datetime.timedelta(days=7)
+        # fig.suptitle(f'Correlations {date.strftime("%Y-%m-%d")} - {date2.strftime("%Y-%m-%d")}', fontsize=30)
+
+        # elif frequency == 24:
+        #     date = start_date + datetime.timedelta(hours=(t - start))
+        #     fig.suptitle(f'{date.strftime("%Y-%m-%d %H:00")}', fontsize=30)
+        # fig.suptitle(f'{date.strftime("%Y-%m-%d")}', fontsize=30)
+
+        if img_flux is None:
+            img_flux = axs[0].imshow(flux[t],
+                                     interpolation='none',
+                                     cmap=cmap_flux,
+                                     vmin=flux_min,
+                                     vmax=flux_max)
+            axs[0].set_xticks(xticks)
+            axs[0].set_yticks(yticks)
+            axs[0].set_xticklabels(x_label_list)
+            axs[0].set_yticklabels(y_label_list)
+
+            img_sst = axs[1].imshow(sst[t],
+                                     interpolation='none',
+                                     cmap=cmap_sst,
+                                     vmin=sst_min,
+                                     vmax=sst_max)
+            axs[1].set_xticks(xticks)
+            axs[1].set_yticks(yticks)
+            axs[1].set_xticklabels(x_label_list)
+            axs[1].set_yticklabels(y_label_list)
+
+            img_press = axs[2].imshow(press[t],
+                                     interpolation='none',
+                                     cmap=cmap_press,
+                                     vmin=press_min,
+                                     vmax=press_max)
+            axs[2].set_xticks(xticks)
+            axs[2].set_yticks(yticks)
+            axs[2].set_xticklabels(x_label_list)
+            axs[2].set_yticklabels(y_label_list)
+        else:
+            img_flux.set_data(flux[t])
+            img_sst.set_data(sst[t])
+            img_press.set_data(press[t])
+
+        fig.colorbar(img_flux, cax=cax_flux, orientation='vertical')
+        fig.colorbar(img_sst, cax=cax_sst, orientation='vertical')
+        fig.colorbar(img_press, cax=cax_press, orientation='vertical')
+
+        fig.tight_layout()
+        plt.tight_layout()
+        # fig.savefig(files_path_prefix + f'videos/3D/flux-sst-press/hourly/{pic_num:05d}.png')
+        fig.savefig(files_path_prefix + f'videos/3D/flux-sst-press/correlations/{frequency}/{pic_num:05d}.png')
+        pic_num += 1
     return
