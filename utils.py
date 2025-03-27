@@ -13,7 +13,7 @@ from SSIM import get_SSIM
 from earlystopping import EarlyStopping
 from tensorboardX import SummaryWriter
 # from torchmetrics.regression.csi import CriticalSuccessIndex
-
+from loader import load_mask
 
 IN_LEN = cfg.in_len
 OUT_LEN = cfg.out_len
@@ -52,6 +52,7 @@ class Evaluation(object):
         self._seq_len = seq_len
         self._use_central = use_central
         self._max_val = max_val
+        self.mask = load_mask(cfg.root_path)
         # self.csi_metrics = CriticalSuccessIndex(threshold=0.5, keep_sequence_dim=2)
 
     def clear_all(self):
@@ -73,7 +74,7 @@ class Evaluation(object):
             gt = gt[:, :, :, central_region[1]:central_region[3], central_region[0]:central_region[2]]
 
         self._total_batch_num += batch_size
-        ssim = get_SSIM(prediction=pred, truth=gt)
+        ssim = get_SSIM(prediction=pred, truth=gt, mask=self.mask)
         # self.csi_metrics.update(torch.tensor(pred), torch.tensor(gt))
 
         # # B*S*C*H*W
@@ -102,17 +103,16 @@ def normalize_data_cuda(batch, min_vals, max_vals):
     #     print(torch.max(batch[:, :, i]))
     #     print(torch.min(batch[:, :, i]))
 
-    for channel in range(3):
+    for channel in range(cfg.channels):
         batch[:, :cfg.in_len + cfg.out_len, channel] = (batch[:, :cfg.in_len + cfg.out_len, channel] -
                                                         min_vals[channel]) / (max_vals[channel] - min_vals[channel])
         # normalize A
-        batch[:, :cfg.in_len + cfg.out_len, channel + 3] = (batch[:, :cfg.in_len + cfg.out_len, channel + 3] -
+        batch[:, :cfg.in_len + cfg.out_len, channel + cfg.channels] = (batch[:, :cfg.in_len + cfg.out_len, channel + cfg.channels] -
                                                             min_vals[channel]) / (max_vals[channel] - min_vals[channel])
 
-        if cfg.features_amount == 9:
-            # normalize B
-                batch[:, :cfg.in_len + cfg.out_len, channel + 6] = (batch[:, :cfg.in_len + cfg.out_len, channel + 6] -
-                                                                (min_vals[channel])) / ((max_vals[channel] - min_vals[channel]))
+        # normalize B
+        batch[:, :cfg.in_len + cfg.out_len, channel + cfg.channels*2] = (batch[:, :cfg.in_len + cfg.out_len, channel + cfg.channels*2] -
+                                                        (min_vals[channel])) / ((max_vals[channel] - min_vals[channel]))
 
         #
         # # normalize eigenvalues

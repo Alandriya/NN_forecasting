@@ -46,17 +46,16 @@ class OrderedEasyDict(OrderedDict):
 
 cfg = OrderedEasyDict()
 
-cfg.start_year = 1979
-cfg.features_amount = 21
-# ConvLSTM  MS-LSTM  Att-Unet
-# cfg.model_name = 'Transformer'
+cfg.features_amount = 3
+# ConvLSTM  MS-LSTM  Att-Unet Transformer
 cfg.model_name = 'Attention U-net'
-cfg.nn_mode = 'test'
+cfg.nn_mode = 'train'
 
 cfg.bins = 100
 cfg.LOAD_MODEL = True
 cfg.DELETE_OLD_MODEL = False
 cfg.postfix_short = SHORT_POSTFIX
+cfg.channels = 1
 
 cfg.gpu = '0, 1, 2, 3'
 cfg.gpu_nums = len(cfg.gpu.split(','))
@@ -72,14 +71,14 @@ cfg.CONV_conv = Conv2d
 cfg.width = 91
 cfg.height = 81
 cfg.in_len = 7
-cfg.out_len = 5
-cfg.epoch = 100
+cfg.out_len = 3
+cfg.epoch = 10
 flux_quantiles = np.load(files_path_prefix + f'DATA/FLUX_1979-2025_diff_quantiles.npy')
 sst_quantiles = np.load(files_path_prefix + f'DATA/SST_1979-2025_diff_quantiles.npy')
 press_quantiles = np.load(files_path_prefix + f'DATA/PRESS_1979-2025_diff_quantiles.npy')
 
 cfg.min_vals = (flux_quantiles[0], sst_quantiles[0], press_quantiles[0])
-cfg.max_vals = (flux_quantiles[-1], sst_quantiles[-1], press_quantiles[-1])# cfg.min_vals = (0, 0, 0)
+cfg.max_vals = (flux_quantiles[-1], sst_quantiles[-1], press_quantiles[-1])
 
 
 cfg.early_stopping = False
@@ -109,7 +108,6 @@ cfg.root_path = files_path_prefix
 
 cfg.GLOBAL = OrderedEasyDict()
 cfg.GLOBAL.MODEL_LOG_SAVE_PATH = os.path.join(cfg.root_path, cfg.work_path, 'save', cfg.dataset, cfg.model_name)
-# cfg.GLOBAL.DATASET_PATH = os.path.join(cfg.root_path, cfg.data_path, 'dataset', cfg.dataset)
 
 cfg.HKO = OrderedEasyDict()
 cfg.HKO.THRESHOLDS = np.array([0.5, 2, 5, 10, 30])
