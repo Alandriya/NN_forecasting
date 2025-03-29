@@ -91,18 +91,18 @@ def plot_predictions(files_path_prefix: str,
     # flux_min, sst_min, press_min = cfg.min_vals[:3]
     # flux_max, sst_max, press_max = cfg.max_vals[:3]
 
-    # flux_min, sst_min, press_min = 0, 0, 0
-    # flux_max, sst_max, press_max = 1, 1, 1
+    flux_min, sst_min, press_min = 0, 0, 0
+    flux_max, sst_max, press_max = 1, 1, 1
     flux_min = min(np.nanmin(Y_test[:, 0]), np.nanmin(Y_predict[:, 0]))
     flux_max = max(np.nanmax(Y_test[:, 0]), np.nanmax(Y_predict[:, 0]))
     # flux_min = min(-1, flux_min)
     # flux_max = max(flux_max, 1)
 
-    sst_min = min(np.nanmin(Y_test[:, 1]), np.nanmin(Y_predict[:, 1]))
-    sst_max = max(np.nanmax(Y_test[:, 1]), np.nanmax(Y_predict[:, 1]))
-
-    press_min = min(np.nanmin(Y_test[:, 2]), np.nanmin(Y_predict[:, 2]))
-    press_max = max(np.nanmax(Y_test[:, 2]), np.nanmax(Y_predict[:, 2]))
+    # sst_min = min(np.nanmin(Y_test[:, 1]), np.nanmin(Y_predict[:, 1]))
+    # sst_max = max(np.nanmax(Y_test[:, 1]), np.nanmax(Y_predict[:, 1]))
+    #
+    # press_min = min(np.nanmin(Y_test[:, 2]), np.nanmin(Y_predict[:, 2]))
+    # press_max = max(np.nanmax(Y_test[:, 2]), np.nanmax(Y_predict[:, 2]))
     # print(flux_min)
     # print(flux_max)
     # print(sst_min)
@@ -142,7 +142,7 @@ def plot_predictions(files_path_prefix: str,
     # print(Y_test[0, 0])
     # print(Y_predict[0, 0])
 
-    for k in range(3):
+    for k in range(cfg.channels):
         fig, axs = plt.subplots(3, days_prediction, figsize=(5 * days_prediction, 15))
         img = [[None for _ in range(days_prediction)] for _ in range(3)]
         cax = [[None for _ in range(days_prediction)] for _ in range(3)]

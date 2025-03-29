@@ -10,10 +10,12 @@ def train(train_data, model, criterion, optimizer, mask, model_save_path):
     train_loader = DataLoader(train_data, num_workers=cfg.dataloader_thread, batch_size=cfg.batch, shuffle=False, pin_memory=True,
                               sampler=train_sampler)
     train_loss = np.zeros(cfg.epoch, dtype=float)
+    time_start = time.time()
     for epoch in range(1, cfg.epoch + 1):
         train_sampler.set_epoch(epoch)
         epoch_loss = 0.0
         print(f'Epoch {epoch}/{cfg.epoch}', flush=True)
+        print(f'time elapsed: {int((time.time() - time_start) / 60)} minutes')
         for idx, train_batch in enumerate(train_loader):
             optimizer.zero_grad()
             train_batch = normalize_data_cuda(train_batch, cfg.min_vals, cfg.max_vals)
@@ -34,7 +36,7 @@ def train(train_data, model, criterion, optimizer, mask, model_save_path):
             print(f'Loss: {epoch_loss}', flush=True)
 
     if is_master_proc():
-        np.save(cfg.root_path + f'Losses/loss_{cfg.model_name}_{cfg.start_year}.npy', train_loss)
+        np.save(cfg.root_path + f'Losses/loss_{cfg.model_name}.npy', train_loss)
         torch.distributed.destroy_process_group()
         save_path = cfg.GLOBAL.MODEL_LOG_SAVE_PATH
         if cfg.DELETE_OLD_MODEL and os.path.exists(save_path):
@@ -60,10 +62,11 @@ def test(test_data, model, criterion, optimizer, mask):
         with ((torch.no_grad())):
             ssim_flux = 0.0
             mse_flux = 0.0
-
+            time_start = time.time()
             amount = 0
             for idx, test_batch in enumerate(test_loader):
-                print(f'batch {idx}')
+                print(f'Epoch {idx}')
+                print(f'time elapsed: {int((time.time() - time_start)/60)} minutes')
                 test_batch = normalize_data_cuda(test_batch, cfg.min_vals, cfg.max_vals)
                 input = test_batch[:, :cfg.in_len, :cfg.channels].clone()
                 test_batch = test_batch.cuda()

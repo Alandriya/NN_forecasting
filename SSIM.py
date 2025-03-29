@@ -31,7 +31,7 @@ def get_SSIM(prediction, truth, mask=None):
 
         for i in range(b):
             for day in range(s):
-                for k in range(3):
+                for k in range(cfg.channels):
                     # ssim_arr[i, day, k] = ssim(prediction[i, day, k], truth[i, day, k], data_range=1)
                     max_val = max(max_pred[k], max_true[k])
                     min_val = min(min_pred[k], min_true[k])

@@ -49,7 +49,7 @@ cfg = OrderedEasyDict()
 cfg.features_amount = 3
 # ConvLSTM  MS-LSTM  Att-Unet Transformer
 cfg.model_name = 'Attention U-net'
-cfg.nn_mode = 'train'
+cfg.nn_mode = 'test'
 
 cfg.bins = 100
 cfg.LOAD_MODEL = True
